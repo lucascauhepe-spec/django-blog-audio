@@ -1,0 +1,15 @@
+# Entorno virtual
+.venv/
+
+# Python
+__pycache__/
+*.pyc
+
+# Base de datos local
+db.sqlite3
+
+# Secretos (los usamos en la Etapa 11)
+.env
+
+# Configuración personal del editor
+.vscode/
