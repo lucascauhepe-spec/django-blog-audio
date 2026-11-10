@@ -1,15 +1,18 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <title>{{ post.title }}</title>
-</head>
-<body>
-  <h1>{{ post.title }}</h1>
-  <p>By {{ post.author }} · {{ post.created_at|date:"M j, Y" }}</p>
+{% extends "base.html" %}
 
-  {{ post.content|linebreaks }}
+{% block title %}{{ post.title }}{% endblock %}
 
-  <p><a href="{% url 'blog:post_list' %}">Back to all posts</a></p>
-</body>
-</html>
+{% block content %}
+  <article>
+    <h1>{{ post.title }}</h1>
+    <p class="text-body-secondary">
+      by {{ post.author }} · {{ post.created_at|date:"M j, Y" }}
+    </p>
+
+    <div class="mt-4">
+      {{ post.content|linebreaks }}
+    </div>
+  </article>
+
+  <a href="{% url 'blog:post_list' %}" class="btn btn-link px-0 mt-3">← Back to all posts</a>
+{% endblock %}
