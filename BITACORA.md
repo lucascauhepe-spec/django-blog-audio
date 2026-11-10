@@ -10,6 +10,8 @@
 
 Construir **desde cero** un blog en Django con calidad de portfolio, publicado online y con su código en GitHub, **aprendiendo en el camino** cómo funciona cada parte. La meta principal no es solo tener la app, sino poder desarrollar con Django de forma autónoma.
 
+Además, este proyecto es la **entrega final de Django de la Diplomatura (Coderhouse)**.
+
 ## 2. Entorno
 
 | Elemento | Valor |
@@ -17,11 +19,12 @@ Construir **desde cero** un blog en Django con calidad de portfolio, publicado o
 | Sistema operativo | Windows |
 | Editor | VS Code |
 | Python | Python 3.14.7 |
-| Django | 6.1.2  |
+| Django | 6.1.2 |
 | Control de versiones | Git (instalado) + GitHub (cuenta creada) |
 | Base de datos | SQLite (desarrollo) |
 | Repositorio | https://github.com/lucascauhepe-spec/django-blog-audio |
-| Deploy previsto | PythonAnywhere (plan gratuito) |
+| Deploy previsto | PythonAnywhere (plan gratuito), después de la entrega |
+| Entrega final Coderhouse | ~2026-12-01 (este proyecto es la entrega) |
 
 ## 3. Decisiones tomadas
 
@@ -45,6 +48,15 @@ Construir **desde cero** un blog en Django con calidad de portfolio, publicado o
 | 2026-10-16 | `Post.status` con `TextChoices`: solo `draft` y `published` (default `draft`) | Lo que pide el alcance; nada se publica sin querer |
 | 2026-10-16 | `author` con `on_delete=CASCADE` y `related_name="posts"` | Simple para un blog personal; `user.posts.all()` se lee claro |
 | 2026-10-16 | Slug generado en `save()` una sola vez; en el admin es `readonly` (sin `prepopulated_fields`) | Las URLs no cambian y no se rompen los links compartidos |
+| 2026-11-10 | Este proyecto es la **entrega final de Django de la Diplomatura (Coderhouse)** | Cubre casi todos los criterios; solo hay que sumar imágenes y perfil |
+| 2026-11-10 | **Imágenes en los posts** y **perfil de usuario** pasan al núcleo | Son obligatorios en la consigna |
+| 2026-11-10 | Variables de entorno con **`python-decouple`** | Es lo que espera la consigna |
+| 2026-11-10 | Tests, paginación y deploy quedan **para después de la entrega** | No los pide la consigna; priorizar llegar a tiempo |
+| 2026-11-10 | "Mis posts" (borradores) se integra en la página de **perfil** | Una sola etapa cubre las dos cosas |
+| 2026-11-10 | Sin preguntas de repaso ni ejercicios entre pasos | Avanzar paso a paso; las dudas las planteo yo |
+| 2026-11-10 | Rutas con namespace (`app_name = "blog"`) | Va a haber rutas de varias apps (`blog`, `accounts`); evita choques de nombres |
+| 2026-11-10 | `select_related("author")` en la lista | Evita una consulta extra por post (problema N+1) |
+| 2026-11-10 | Un borrador da 404 en el detalle público | Los borradores no existen para el público; el autor los verá desde su perfil |
 
 ## 4. Proyectos de referencia
 
@@ -53,46 +65,48 @@ Construir **desde cero** un blog en Django con calidad de portfolio, publicado o
 
 ## 5. Alcance "portfolio"
 
-Lo que debería tener la versión final:
+Lo que debería tener la versión final (✱ = obligatorio para la entrega de Coderhouse):
 
-- [ ] Usuarios: registro, login y logout
-- [ ] Posts con autor = `User` real; solo el autor puede editar o borrar los suyos
-- [ ] CRUD completo, con validaciones y confirmación antes de borrar
-- [ ] Mensajes de feedback ("Post publicado ✓")
-- [ ] Borradores y publicados; URLs con slug
-- [ ] Búsqueda y paginación
+- [ ] ✱ Usuarios: registro, login y logout
+- [ ] ✱ Posts con autor = `User` real; solo el autor puede editar o borrar los suyos
+- [ ] ✱ CRUD completo desde la web, con validaciones y confirmación antes de borrar
+- [ ] ✱ Imagen en los posts (el template no se rompe si falta)
+- [ ] ✱ Perfil de usuario (con sus posts y borradores)
+- [ ] ✱ Rutas protegidas con `@login_required`
+- [ ] Mensajes de feedback ("Post published ✓")
+- [x] Borradores y publicados; URLs con slug
+- [ ] Búsqueda (opcional en la consigna) y paginación
 - [ ] Diseño prolijo y responsive (Bootstrap)
 - [ ] Tests automáticos
-- [ ] Secretos fuera del código (`.env`), `requirements.txt`
+- [ ] ✱ Secretos fuera del código (`.env` + `.env.example`), `requirements.txt` actualizado
 - [ ] Deploy con URL pública
-- [ ] README con descripción, capturas e instrucciones
+- [ ] ✱ README con descripción, tecnologías, instalación y autor
 
 ## 6. Hoja de ruta
 
 | # | Etapa | Conceptos clave | Estado |
 |---|---|---|---|
 | 0 | Diagnóstico del proyecto propio y del profesor | Estructura de un proyecto Django, comparación | ✅ |
-| 1 | **Preparación**: configurar Git, repo en GitHub, `.venv`, Django, `startproject`, `.gitignore`, `requirements.txt`, primer commit y push | Git (`init`, `add`, `commit`, `push`), entorno virtual, estructura de Django | ✅ |
-| 2 | **Modelo `Post` bien diseñado** (`title`, `slug`, `content`, `author` → `User`, `status`, fechas) + usuario propio + migraciones + admin personalizado | `AbstractUser`, `AUTH_USER_MODEL`, `ForeignKey`, `TextChoices`, `Meta`, `save()`, migraciones, `ModelAdmin` | ✅ |
-| 3 | **Lista y detalle** (solo publicados), URLs con slug | Vistas de función, QuerySets, `get_object_or_404`, `get_absolute_url` | ⬜ |
-| 4 | **Templates y estilo**: `base.html`, navegación, Bootstrap, archivos estáticos | `extends`/`block`, filtros, `static` | ⬜ |
-| 5 | **Autenticación**: login, logout, registro | `django.contrib.auth`, `UserCreationForm`, `request.user` | ⬜ |
-| 6 | **Crear post** con `ModelForm` (autor = usuario logueado) + validaciones + mensajes | bound/unbound, `clean_<campo>`, `commit=False`, `messages` | ⬜ |
-| 7 | **Editar y eliminar** con permisos | `instance=`, `@login_required`, borrar solo por POST, 403 | ⬜ |
-| 8 | **Borradores**: página "Mis posts" | Filtrar por usuario y estado | ⬜ |
-| 9 | **Búsqueda y paginación** | `forms.Form` por GET, `icontains`, `Paginator` | ⬜ |
-| 10 | **Tests** | `TestCase`, `self.client`, `assertRedirects` | ⬜ |
-| 11 | **Preparar para producción**: `.env`, `DEBUG`, `ALLOWED_HOSTS`, `collectstatic` | Configuración por entorno, seguridad básica | ⬜ |
-| 12 | **Deploy** en PythonAnywhere | Servir una app Django real | ⬜ |
-| 13 | **README final** con capturas y link | Presentar el proyecto | ⬜ |
+| 1 | **Preparación**: Git, GitHub, `.venv`, Django, `startproject`, `.gitignore`, `requirements.txt` | Git, entorno virtual, estructura de Django | ✅ |
+| 2 | **Modelo `Post`** + usuario propio + migraciones + admin | `AbstractUser`, `AUTH_USER_MODEL`, `ForeignKey`, `TextChoices`, `save()`, migraciones, `ModelAdmin` | ✅ |
+| 3 | **Lista y detalle** (solo publicados), URLs con slug | `include`, namespace, vistas de función, QuerySets, `get_object_or_404`, `get_absolute_url` | ✅ |
+| 4 | **Templates y estilo**: `base.html`, navegación, Bootstrap, estáticos | `extends`/`block`, `static` | ⬜ |
+| 5 | **Autenticación**: registro, login, logout | `django.contrib.auth`, `UserCreationForm`, `request.user` | ⬜ |
+| 6 | **Crear post** con `ModelForm` (autor = usuario logueado) | bound/unbound, `commit=False`, `messages`, `@login_required` | ⬜ |
+| 7 | **Editar y eliminar** (solo el autor) | `instance=`, borrar solo por POST, 403 | ⬜ |
+| 8 | **Imágenes en los posts** | `ImageField`, Pillow, `MEDIA_URL`/`MEDIA_ROOT`, `enctype` | ⬜ |
+| 9 | **Perfil** con mis posts y borradores | Filtrar por usuario y estado, `related_name` | ⬜ |
+| 10 | **Búsqueda** | `forms.Form` por GET, `Q`, `icontains` | ⬜ |
+| 11 | **Configuración**: `python-decouple`, `.env`, `.env.example` | Configuración por entorno, secretos | ⬜ |
+| 12 | **README** + revisión con el checklist de la consigna → **ENTREGA** | Documentar y presentar | ⬜ |
 
-**Extras opcionales** (después de la 13): categorías/etiquetas, comentarios, imágenes en los posts (media), likes, estadísticas, formulario de contacto, vistas basadas en clases (CBVs).
+**Después de la entrega:** tests, paginación, deploy en PythonAnywhere, categorías, avatar de usuario, comentarios, CBVs.
 
 ## 7. Estado actual
 
-- **Última etapa completada:** 2 — Modelo `Post`, usuario propio y admin
-- **Próximo paso:** Etapa 3 — Lista y detalle (solo publicados), URLs con slug
-- **Pendientes / dudas abiertas:** —
+- **Última etapa completada:** 3 — Lista y detalle
+- **Próximo paso:** Etapa 4 — `base.html`, navegación y Bootstrap
+- **Pendientes / dudas abiertas:** idioma del README (inglés con sección en español, o al revés) → se decide en la Etapa 12
 
 ---
 
@@ -184,6 +198,36 @@ Lo que debería tener la versión final:
 
 **Dudas para repasar:** —
 
+### Etapa 3 — Lista y detalle (2026-11-10)
+
+**Objetivo:** primeras páginas públicas: lista de posts publicados en `/` y detalle en `/<slug>/`.
+
+**Archivos creados/modificados:** `config/urls.py`, `blog/urls.py` (nuevo), `blog/views.py`, `blog/templates/blog/post_list.html` y `post_detail.html` (nuevos), `blog/models.py` (`get_absolute_url`).
+
+**Qué aprendí:**
+- `config/urls.py` distribuye: `include("blog.urls")` delega en las rutas de la app.
+- `path("<slug:slug>/", vista, name=...)`: el convertidor `slug` captura esa parte de la URL y la pasa a la vista como argumento con ese nombre.
+- `app_name` da namespace a las rutas (`blog:post_detail`). Django prueba las rutas en orden: las fijas (`new/`) van antes que `<slug:slug>/`.
+- Una vista recibe `request` y devuelve una respuesta; `render(request, template, contexto)` arma el HTML.
+- Los QuerySets son perezosos: el SQL se ejecuta cuando se recorren (por ejemplo en el `{% for %}`).
+- `select_related("author")` trae posts y autores en una sola consulta (evita N+1).
+- `get_object_or_404` con varias condiciones: un borrador da 404 para el público.
+- Templates en `app/templates/app/`: Django los busca por `APP_DIRS`; la subcarpeta repetida evita choques entre apps.
+- `{{ }}` muestra valores, `{% %}` es lógica; `{% for %}`/`{% empty %}`; filtros `date` y `linebreaks`; el HTML se escapa solo.
+- `{% url 'blog:post_detail' post.slug %}` y `reverse()` generan URLs a partir del nombre de la ruta.
+- `get_absolute_url()`: cada objeto sabe su URL; el admin agrega "View on site". En templates los métodos sin argumentos se llaman sin paréntesis.
+
+**Cómo verificar que funciona:** `/` lista solo publicados; clic → detalle en `/<slug>/`; el slug de un borrador o uno inexistente → 404; en el admin, "View on site" abre el post.
+
+**Errores que aparecieron y cómo los resolví:** contraseña del superusuario olvidada → `python manage.py changepassword <usuario>` (las contraseñas se guardan como hash, no se pueden recuperar, solo reemplazar).
+
+**Commit(s):**
+- `Add post list and detail views with slug URLs`
+- `Add get_absolute_url to Post and use it in templates`
+- `Update project log for stage 3`
+
+**Dudas para repasar:** —
+
 ## 9. Conceptos aprendidos (glosario personal)
 
 > Completar con mis propias palabras a medida que avancemos.
@@ -208,3 +252,13 @@ Lo que debería tener la versión final:
 | `TextChoices` | Opciones fijas para un campo: valor guardado + texto visible | 2 |
 | `super().save()` | Llama al `save()` original para que el objeto se guarde de verdad | 2 |
 | `ModelAdmin` | Clase que configura cómo se ve un modelo en el admin | 2 |
+| `include()` | Delega un grupo de rutas en el `urls.py` de una app | 3 |
+| Convertidor de ruta | `<slug:slug>`: captura una parte de la URL con un formato y la pasa a la vista | 3 |
+| Namespace (`app_name`) | Prefijo para los nombres de rutas de una app (`blog:post_list`) | 3 |
+| Vista | Función que recibe un `request` y devuelve una respuesta | 3 |
+| QuerySet perezoso | La consulta se arma pero no se ejecuta hasta que se usan los resultados | 3 |
+| `select_related` | Trae objetos relacionados por `ForeignKey` en la misma consulta (JOIN) | 3 |
+| `render` / contexto | Carga un template, le pasa un diccionario de variables y devuelve el HTML | 3 |
+| Filtro de template | Transforma un valor al mostrarlo (`date`, `linebreaks`) | 3 |
+| `reverse()` / `{% url %}` | Generan una URL a partir del nombre de la ruta | 3 |
+| `get_absolute_url()` | Método convencional que devuelve la URL de un objeto | 3 |
