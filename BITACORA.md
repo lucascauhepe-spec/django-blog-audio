@@ -57,6 +57,11 @@ Además, este proyecto es la **entrega final de Django de la Diplomatura (Coderh
 | 2026-11-10 | Rutas con namespace (`app_name = "blog"`) | Va a haber rutas de varias apps (`blog`, `accounts`); evita choques de nombres |
 | 2026-11-10 | `select_related("author")` en la lista | Evita una consulta extra por post (problema N+1) |
 | 2026-11-10 | Un borrador da 404 en el detalle público | Los borradores no existen para el público; el autor los verá desde su perfil |
+| 2026-11-10 | `base.html` en `templates/` **a nivel proyecto** (`DIRS = [BASE_DIR / "templates"]`) | Lo comparten todas las apps (`blog`, `accounts`); no pertenece a ninguna |
+| 2026-11-10 | CSS propio en `static/` **a nivel proyecto** (`STATICFILES_DIRS`) | Es el estilo de todo el sitio; la consigna pide estáticos en el repo |
+| 2026-11-10 | Bootstrap 5.3.3 por CDN con **versión fija** en la URL | El sitio no cambia solo; mismo criterio que `requirements.txt` |
+| 2026-11-10 | Título visible del blog: **Headroom** (en un solo lugar, `base.html`) | Concepto de audio (margen antes de saturar); se cambia en un segundo |
+| 2026-11-10 | Rutas armadas con `BASE_DIR`, nunca absolutas | Funciona en cualquier PC o servidor; lo exige la consigna |
 
 ## 4. Proyectos de referencia
 
@@ -76,7 +81,7 @@ Lo que debería tener la versión final (✱ = obligatorio para la entrega de Co
 - [ ] Mensajes de feedback ("Post published ✓")
 - [x] Borradores y publicados; URLs con slug
 - [ ] Búsqueda (opcional en la consigna) y paginación
-- [ ] Diseño prolijo y responsive (Bootstrap)
+- [x] Diseño prolijo y responsive (Bootstrap)
 - [ ] Tests automáticos
 - [ ] ✱ Secretos fuera del código (`.env` + `.env.example`), `requirements.txt` actualizado
 - [ ] Deploy con URL pública
@@ -90,7 +95,7 @@ Lo que debería tener la versión final (✱ = obligatorio para la entrega de Co
 | 1 | **Preparación**: Git, GitHub, `.venv`, Django, `startproject`, `.gitignore`, `requirements.txt` | Git, entorno virtual, estructura de Django | ✅ |
 | 2 | **Modelo `Post`** + usuario propio + migraciones + admin | `AbstractUser`, `AUTH_USER_MODEL`, `ForeignKey`, `TextChoices`, `save()`, migraciones, `ModelAdmin` | ✅ |
 | 3 | **Lista y detalle** (solo publicados), URLs con slug | `include`, namespace, vistas de función, QuerySets, `get_object_or_404`, `get_absolute_url` | ✅ |
-| 4 | **Templates y estilo**: `base.html`, navegación, Bootstrap, estáticos | `extends`/`block`, `static` | ⬜ |
+| 4 | **Templates y estilo**: `base.html`, navegación, Bootstrap, estáticos | `extends`/`block`, `DIRS`, `static`, `STATICFILES_DIRS` | ✅ |
 | 5 | **Autenticación**: registro, login, logout | `django.contrib.auth`, `UserCreationForm`, `request.user` | ⬜ |
 | 6 | **Crear post** con `ModelForm` (autor = usuario logueado) | bound/unbound, `commit=False`, `messages`, `@login_required` | ⬜ |
 | 7 | **Editar y eliminar** (solo el autor) | `instance=`, borrar solo por POST, 403 | ⬜ |
@@ -104,8 +109,8 @@ Lo que debería tener la versión final (✱ = obligatorio para la entrega de Co
 
 ## 7. Estado actual
 
-- **Última etapa completada:** 3 — Lista y detalle
-- **Próximo paso:** Etapa 4 — `base.html`, navegación y Bootstrap
+- **Última etapa completada:** 4 — Templates y estilo
+- **Próximo paso:** Etapa 5 — Autenticación: registro, login y logout
 - **Pendientes / dudas abiertas:** idioma del README (inglés con sección en español, o al revés) → se decide en la Etapa 12
 
 ---
@@ -228,6 +233,34 @@ Lo que debería tener la versión final (✱ = obligatorio para la entrega de Co
 
 **Dudas para repasar:** —
 
+### Etapa 4 — Templates y estilo (2026-11-10)
+
+**Objetivo:** estructura común para todas las páginas (`base.html`), navegación, diseño responsive con Bootstrap y archivos estáticos propios.
+
+**Archivos creados/modificados:** `config/settings.py` (`TEMPLATES["DIRS"]`, `STATICFILES_DIRS`), `templates/base.html` (nuevo), `blog/templates/blog/post_list.html` y `post_detail.html` (heredan de `base.html`), `static/css/styles.css` (nuevo).
+
+**Qué aprendí:**
+- Herencia de templates: `base.html` define huecos con `{% block %}`; los hijos usan `{% extends "base.html" %}` (siempre la primera etiqueta) y rellenan esos bloques. En un hijo, todo lo que está fuera de un bloque se ignora.
+- `DIRS = [BASE_DIR / "templates"]` agrega una carpeta de templates a nivel proyecto; `APP_DIRS` sigue buscando dentro de cada app. Django busca primero en `DIRS`.
+- `BASE_DIR` es la raíz del proyecto calculada desde `settings.py`: las rutas se arman con `/` y nunca son absolutas.
+- Estáticos = archivos del sitio que se entregan tal cual (CSS, JS, imágenes del diseño). Media = archivos que suben los usuarios (Etapa 8).
+- `STATIC_URL` es el prefijo de la URL; `STATICFILES_DIRS` agrega carpetas donde buscar. Con `DEBUG = True`, `runserver` los sirve solo.
+- `{% load static %}` se pone en cada template que use `{% static %}` (no se hereda). `{% static 'css/styles.css' %}` genera la URL, igual que `{% url %}` para rutas.
+- El CSS propio va después del de Bootstrap para poder pisarlo.
+- Bootstrap: `viewport` para el celular, `container`, utilidades de espaciado (`py-4`, `mb-3`, `ms-auto`), `navbar-expand-md` + JS para el menú ☰, tarjetas (`card`).
+- Filtros y tags nuevos: `truncatewords`, `{% now "Y" %}`.
+
+**Cómo verificar que funciona:** `/` muestra la barra de navegación, las tarjetas y el pie; la pestaña dice "Posts · Headroom"; en vista de celular (F12 → `Ctrl+Shift+M`) el menú se colapsa en ☰; `/static/css/styles.css` muestra el CSS; las tarjetas tienen sombra al pasar el mouse.
+
+**Errores que aparecieron y cómo los resolví:** ninguno. Nota: si el CSS no cambia, recargar con `Ctrl+F5` (caché del navegador).
+
+**Commit(s):**
+- `Add base template with Bootstrap layout and navigation`
+- `Add static files setup with custom stylesheet`
+- `Update project log for stage 4`
+
+**Dudas para repasar:** —
+
 ## 9. Conceptos aprendidos (glosario personal)
 
 > Completar con mis propias palabras a medida que avancemos.
@@ -262,3 +295,9 @@ Lo que debería tener la versión final (✱ = obligatorio para la entrega de Co
 | Filtro de template | Transforma un valor al mostrarlo (`date`, `linebreaks`) | 3 |
 | `reverse()` / `{% url %}` | Generan una URL a partir del nombre de la ruta | 3 |
 | `get_absolute_url()` | Método convencional que devuelve la URL de un objeto | 3 |
+| Herencia de templates | `base.html` con `{% block %}` + hijos con `{% extends %}`: la estructura común se escribe una sola vez | 4 |
+| `DIRS` / `BASE_DIR` | Carpetas extra de templates / raíz del proyecto para armar rutas sin escribirlas a mano | 4 |
+| Archivos estáticos | CSS, JS e imágenes del diseño que se entregan tal cual (`STATIC_URL`, `STATICFILES_DIRS`) | 4 |
+| `{% load static %}` / `{% static %}` | Habilita el tag en el template / genera la URL de un archivo estático | 4 |
+| Viewport / responsive | La meta `viewport` hace que el sitio se adapte al ancho del celular | 4 |
+| CDN | Servidor externo desde donde el navegador descarga librerías como Bootstrap | 4 |
