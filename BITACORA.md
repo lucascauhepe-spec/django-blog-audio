@@ -17,7 +17,7 @@ Construir **desde cero** un blog en Django con calidad de portfolio, publicado o
 | Sistema operativo | Windows |
 | Editor | VS Code |
 | Python | Python 3.14.7 |
-| Django | 6.1.2 (la versión que se instale en la Etapa 1) |
+| Django | 6.1.2  |
 | Control de versiones | Git (instalado) + GitHub (cuenta creada) |
 | Base de datos | SQLite (desarrollo) |
 | Repositorio | https://github.com/lucascauhepe-spec/django-blog-audio |
@@ -39,7 +39,12 @@ Construir **desde cero** un blog en Django con calidad de portfolio, publicado o
 | 2026-10-15 | `TIME_ZONE = "America/Argentina/Buenos_Aires"`, `LANGUAGE_CODE` queda en `en-us` | Idioma y zona horaria son independientes; las fechas se guardan en UTC y se muestran en hora local |
 | 2026-10-15 | Versiones exactas en `requirements.txt` (`pip freeze`) | Que el deploy instale exactamente lo mismo que uso en desarrollo |
 | 2026-10-15 | No correr `migrate` hasta la Etapa 2 | Diseñar primero la relación usuarios/posts, antes de que exista la base |
-| _pendiente_ | ¿Código (modelos, campos, URLs, commits) en inglés? | Se decide al empezar la Etapa 2; recomendado: sí |
+| 2026-10-15 | Código (modelos, campos, URLs, templates, commits) **en inglés**; la bitácora sigue en español | Consistencia con la interfaz en inglés y estándar de la industria |
+| 2026-10-15 | Categorías quedan como **extra**, fuera del núcleo | Agregarlas después es una migración simple; primero llegar a una versión publicada |
+| 2026-10-15 | **Modelo de usuario propio** (`accounts.User` heredando de `AbstractUser`) | Recomendación oficial de Django: cambiarlo después de la primera migración es muy difícil |
+| 2026-10-16 | `Post.status` con `TextChoices`: solo `draft` y `published` (default `draft`) | Lo que pide el alcance; nada se publica sin querer |
+| 2026-10-16 | `author` con `on_delete=CASCADE` y `related_name="posts"` | Simple para un blog personal; `user.posts.all()` se lee claro |
+| 2026-10-16 | Slug generado en `save()` una sola vez; en el admin es `readonly` (sin `prepopulated_fields`) | Las URLs no cambian y no se rompen los links compartidos |
 
 ## 4. Proyectos de referencia
 
@@ -68,7 +73,7 @@ Lo que debería tener la versión final:
 |---|---|---|---|
 | 0 | Diagnóstico del proyecto propio y del profesor | Estructura de un proyecto Django, comparación | ✅ |
 | 1 | **Preparación**: configurar Git, repo en GitHub, `.venv`, Django, `startproject`, `.gitignore`, `requirements.txt`, primer commit y push | Git (`init`, `add`, `commit`, `push`), entorno virtual, estructura de Django | ✅ |
-| 2 | **Modelo `Post` bien diseñado** (`titulo`, `slug`, `contenido`, `autor` → `User`, `estado`, fechas) + migraciones + admin personalizado | `ForeignKey`, `choices`, `Meta`, `save()`, migraciones, `ModelAdmin` | ⬜ |
+| 2 | **Modelo `Post` bien diseñado** (`title`, `slug`, `content`, `author` → `User`, `status`, fechas) + usuario propio + migraciones + admin personalizado | `AbstractUser`, `AUTH_USER_MODEL`, `ForeignKey`, `TextChoices`, `Meta`, `save()`, migraciones, `ModelAdmin` | ✅ |
 | 3 | **Lista y detalle** (solo publicados), URLs con slug | Vistas de función, QuerySets, `get_object_or_404`, `get_absolute_url` | ⬜ |
 | 4 | **Templates y estilo**: `base.html`, navegación, Bootstrap, archivos estáticos | `extends`/`block`, filtros, `static` | ⬜ |
 | 5 | **Autenticación**: login, logout, registro | `django.contrib.auth`, `UserCreationForm`, `request.user` | ⬜ |
@@ -85,9 +90,9 @@ Lo que debería tener la versión final:
 
 ## 7. Estado actual
 
-- **Última etapa completada:** 1 — Preparación
-- **Próximo paso:** Etapa 2 — Modelo `Post` + migraciones + admin
-- **Pendientes / dudas abiertas:** categorías sí o no (Etapa 2); código en inglés sí o no (Etapa 2); completar versión de Python
+- **Última etapa completada:** 2 — Modelo `Post`, usuario propio y admin
+- **Próximo paso:** Etapa 3 — Lista y detalle (solo publicados), URLs con slug
+- **Pendientes / dudas abiertas:** —
 
 ---
 
@@ -143,6 +148,42 @@ Lo que debería tener la versión final:
 
 **Dudas para repasar:** —
 
+### Etapa 2 — Modelo Post, usuario propio y admin (2026-10-15/16)
+
+**Objetivo:** diseñar el modelo de datos del blog (usuarios y posts), crear las tablas con migraciones y gestionar los posts desde el admin.
+
+**Archivos creados/modificados:** `accounts/` (`models.py`, `admin.py`, `migrations/0001_initial.py`), `blog/` (`models.py`, `admin.py`, `migrations/0001_initial.py`), `config/settings.py` (`INSTALLED_APPS`, `AUTH_USER_MODEL`), `requirements.txt` (sin BOM).
+
+**Qué aprendí:**
+- Proyecto vs. app: `config` es la configuración; cada app tiene una responsabilidad (`accounts` usuarios, `blog` posts). Toda app se registra en `INSTALLED_APPS`.
+- `INSTALLED_APPS` son rutas de importación: un nombre mal escrito da `ModuleNotFoundError` (error de Python).
+- `AUTH_USER_MODEL = "accounts.User"` (formato `app.Modelo`) se define antes del primer `migrate`. `AbstractUser` es un molde sin tabla propia.
+- Para referirse al usuario: `settings.AUTH_USER_MODEL` en modelos, `get_user_model()` en el resto del código. Nunca importar `django.contrib.auth.models.User`.
+- `makemigrations` escribe el plan (archivo versionado en Git); `migrate` lo ejecuta sobre la base. Solo los cambios de estructura (campos) generan migraciones; los métodos no.
+- `sqlmigrate` muestra el SQL real: tabla `blog_post`, columna `author_id` → `accounts_user`, `UNIQUE` en el slug.
+- `unique` y `max_length` los hace cumplir la base; `choices` y `blank` los valida Django (forms/admin). Un `create()` directo puede guardar un status inválido.
+- `ForeignKey` se recorre en dos sentidos: `post.author` y `user.posts.all()` (gracias a `related_name`; sin él sería `post_set`).
+- Sobrescribir `save()`: siempre `*args, **kwargs` y siempre llamar a `super().save()`, o no se guarda nada.
+- `get_<campo>_display()` lo crea Django para campos con `choices`.
+- En Python la sangría define qué está dentro de qué (4 espacios por nivel).
+- `ModelAdmin`: `list_display`, `list_filter`, `search_fields`, `date_hierarchy`, `readonly_fields`.
+
+**Cómo verificar que funciona:** `python manage.py check` sin errores; `makemigrations` → "No changes detected"; en `/admin/`: Users dentro de Accounts y Posts dentro de Blog; un post creado en el admin genera su slug y el slug no cambia al editar el título.
+
+**Errores que aparecieron y cómo los resolví:**
+- `requirements.txt` aparecía como modificado: `git diff` mostró que era solo el BOM quitado → commit aparte.
+- El `:` después de `git diff` es el paginador de Git → se sale con `q`.
+
+**Commit(s):**
+- `Save requirements.txt as UTF-8 without BOM`
+- `Add blog and accounts apps with custom user model`
+- `Add Post model with author, status and timestamps`
+- `Generate unique slug from title on save`
+- `Add Post admin with filters, search and read-only slug`
+- `Update project log for stage 2`
+
+**Dudas para repasar:** —
+
 ## 9. Conceptos aprendidos (glosario personal)
 
 > Completar con mis propias palabras a medida que avancemos.
@@ -159,3 +200,11 @@ Lo que debería tener la versión final:
 | `origin` | Apodo convencional del repo remoto en GitHub | 1 |
 | `manage.py` | Script para ejecutar comandos de Django en este proyecto | 1 |
 | `USE_TZ` / `TIME_ZONE` | Guardar fechas en UTC y mostrarlas en hora local | 1 |
+| App | Módulo con una responsabilidad concreta dentro del proyecto | 2 |
+| `AbstractUser` / `AUTH_USER_MODEL` | Molde del usuario de Django / setting que indica qué modelo de usuario usa el proyecto | 2 |
+| Migración | Archivo que describe un cambio en la estructura de la base (`makemigrations` lo crea, `migrate` lo aplica) | 2 |
+| `ForeignKey` | Relación muchos-a-uno; en la base es una columna `<campo>_id` | 2 |
+| `related_name` | Nombre de la relación inversa (`user.posts`) | 2 |
+| `TextChoices` | Opciones fijas para un campo: valor guardado + texto visible | 2 |
+| `super().save()` | Llama al `save()` original para que el objeto se guarde de verdad | 2 |
+| `ModelAdmin` | Clase que configura cómo se ve un modelo en el admin | 2 |
