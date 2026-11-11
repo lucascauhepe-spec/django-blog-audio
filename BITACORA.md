@@ -62,6 +62,12 @@ Además, este proyecto es la **entrega final de Django de la Diplomatura (Coderh
 | 2026-11-10 | Bootstrap 5.3.3 por CDN con **versión fija** en la URL | El sitio no cambia solo; mismo criterio que `requirements.txt` |
 | 2026-11-10 | Título visible del blog: **Headroom** (en un solo lugar, `base.html`) | Concepto de audio (margen antes de saturar); se cambia en un segundo |
 | 2026-11-10 | Rutas armadas con `BASE_DIR`, nunca absolutas | Funciona en cualquier PC o servidor; lo exige la consigna |
+| 2026-11-11 | Login y logout con las vistas de Django (`LoginView`, `LogoutView`); registro con vista propia | No reescribir lo que Django ya resuelve de forma segura |
+| 2026-11-11 | `SignUpForm` hereda de `UserCreationForm` con `model = accounts.User` y pide `username` + `email` | `UserCreationForm` está atado a `auth.User`, que en este proyecto está reemplazado |
+| 2026-11-11 | Después de registrarse, el usuario queda logueado (`login()`) | Mejor experiencia: no tiene que volver a escribir sus datos |
+| 2026-11-11 | Rutas de autenticación en `/accounts/` con namespace `accounts` | Convención de la documentación de Django |
+| 2026-11-11 | `LOGIN_URL`, `LOGIN_REDIRECT_URL` y `LOGOUT_REDIRECT_URL` con nombres de rutas | Se ajustan solos si cambian las URLs |
+| 2026-11-11 | Formularios con `{{ form }}` + reglas CSS propias (`.django-form`), sin `django-crispy-forms` | Sin dependencias extra; sirve para todos los formularios del sitio |
 
 ## 4. Proyectos de referencia
 
@@ -72,7 +78,7 @@ Además, este proyecto es la **entrega final de Django de la Diplomatura (Coderh
 
 Lo que debería tener la versión final (✱ = obligatorio para la entrega de Coderhouse):
 
-- [ ] ✱ Usuarios: registro, login y logout
+- [x] ✱ Usuarios: registro, login y logout
 - [ ] ✱ Posts con autor = `User` real; solo el autor puede editar o borrar los suyos
 - [ ] ✱ CRUD completo desde la web, con validaciones y confirmación antes de borrar
 - [ ] ✱ Imagen en los posts (el template no se rompe si falta)
@@ -96,7 +102,7 @@ Lo que debería tener la versión final (✱ = obligatorio para la entrega de Co
 | 2 | **Modelo `Post`** + usuario propio + migraciones + admin | `AbstractUser`, `AUTH_USER_MODEL`, `ForeignKey`, `TextChoices`, `save()`, migraciones, `ModelAdmin` | ✅ |
 | 3 | **Lista y detalle** (solo publicados), URLs con slug | `include`, namespace, vistas de función, QuerySets, `get_object_or_404`, `get_absolute_url` | ✅ |
 | 4 | **Templates y estilo**: `base.html`, navegación, Bootstrap, estáticos | `extends`/`block`, `DIRS`, `static`, `STATICFILES_DIRS` | ✅ |
-| 5 | **Autenticación**: registro, login, logout | `django.contrib.auth`, `UserCreationForm`, `request.user` | ⬜ |
+| 5 | **Autenticación**: registro, login, logout | `django.contrib.auth`, `UserCreationForm`, `request.user` | ✅ |
 | 6 | **Crear post** con `ModelForm` (autor = usuario logueado) | bound/unbound, `commit=False`, `messages`, `@login_required` | ⬜ |
 | 7 | **Editar y eliminar** (solo el autor) | `instance=`, borrar solo por POST, 403 | ⬜ |
 | 8 | **Imágenes en los posts** | `ImageField`, Pillow, `MEDIA_URL`/`MEDIA_ROOT`, `enctype` | ⬜ |
@@ -109,8 +115,8 @@ Lo que debería tener la versión final (✱ = obligatorio para la entrega de Co
 
 ## 7. Estado actual
 
-- **Última etapa completada:** 4 — Templates y estilo
-- **Próximo paso:** Etapa 5 — Autenticación: registro, login y logout
+- **Última etapa completada:** 5 — Autenticación
+- **Próximo paso:** Etapa 6 — Crear post desde la web (`ModelForm`, `@login_required`, autor = usuario logueado)
 - **Pendientes / dudas abiertas:** idioma del README (inglés con sección en español, o al revés) → se decide en la Etapa 12
 
 ---
@@ -261,6 +267,38 @@ Lo que debería tener la versión final (✱ = obligatorio para la entrega de Co
 
 **Dudas para repasar:** —
 
+### Etapa 5 — Autenticación: registro, login y logout (2026-11-11)
+
+**Objetivo:** que los visitantes puedan registrarse, iniciar y cerrar sesión, y que el sitio distinga entre usuario anónimo y autenticado.
+
+**Archivos creados/modificados:** `accounts/urls.py` (nuevo), `accounts/forms.py` (nuevo), `accounts/views.py`, `accounts/templates/registration/login.html` y `signup.html` (nuevos), `config/urls.py`, `config/settings.py` (`LOGIN_URL`, `LOGIN_REDIRECT_URL`, `LOGOUT_REDIRECT_URL`), `templates/base.html` (navegación), `static/css/styles.css` (formularios).
+
+**Qué aprendí:**
+- `django.contrib.auth` trae `LoginView` y `LogoutView`; son vistas basadas en clases y se conectan con `.as_view()` (los argumentos de `as_view()` las configuran, por ejemplo `redirect_authenticated_user=True`).
+- `LoginView` busca el template `registration/login.html` y le pasa `form` y `next`.
+- Desde Django 5, el logout **solo acepta POST**: en la navegación es un formulario con `{% csrf_token %}`, no un link (un GET no debería cambiar nada en el servidor).
+- `request.user` existe en cada petición: es mi `User` si está logueado o un `AnonymousUser` si no. En templates está como `{{ user }}` gracias a un context processor. Se pregunta con `user.is_authenticated`.
+- Ocultar un link en el template no protege nada; la protección va en la vista.
+- `UserCreationForm` está atado a `auth.User`: con un usuario propio se hereda y se cambia `Meta.model` (`class Meta(UserCreationForm.Meta)`).
+- Patrón de formulario: GET → form vacío (unbound); POST → form con `request.POST` (bound) → `is_valid()` → `save()` + redirect; si es inválido, se vuelve a mostrar el mismo form con los errores.
+- Post/Redirect/Get: después de un POST exitoso siempre redirect, para que recargar la página no reenvíe el formulario.
+- `login(request, user)` crea la sesión (tabla `django_session` + cookie en el navegador).
+- `{% csrf_token %}` es obligatorio en todo formulario POST; sin él, Django responde 403.
+- Las contraseñas viajan por POST y se guardan como hash; un usuario registrado no es staff, así que no entra al admin.
+- El mensaje de login fallido es genérico a propósito: no revela qué usuarios existen.
+- Grilla de Bootstrap: `row`, `col-md-6`, `justify-content-center`.
+
+**Cómo verificar que funciona:** como anónimo, la barra muestra "Log in" y "Sign up"; el registro con errores muestra los mensajes y conserva los datos; el registro válido redirige a `/` ya logueado ("Hi, <usuario>"); logueado, `/accounts/login/` y `/accounts/signup/` redirigen a `/`; "Log out" cierra la sesión; el usuario nuevo aparece en el admin sin staff status.
+
+**Errores que aparecieron y cómo los resolví:** ninguno.
+
+**Commit(s):**
+- `Add login and logout with Django auth views`
+- `Add sign up view with custom user creation form`
+- `Update project log for stage 5`
+
+**Dudas para repasar:** —
+
 ## 9. Conceptos aprendidos (glosario personal)
 
 > Completar con mis propias palabras a medida que avancemos.
@@ -301,3 +339,11 @@ Lo que debería tener la versión final (✱ = obligatorio para la entrega de Co
 | `{% load static %}` / `{% static %}` | Habilita el tag en el template / genera la URL de un archivo estático | 4 |
 | Viewport / responsive | La meta `viewport` hace que el sitio se adapte al ancho del celular | 4 |
 | CDN | Servidor externo desde donde el navegador descarga librerías como Bootstrap | 4 |
+| `request.user` / `AnonymousUser` | El usuario de cada petición: el real si está logueado, uno anónimo si no | 5 |
+| `is_authenticated` | Forma correcta de preguntar si alguien inició sesión | 5 |
+| Sesión | Registro en el servidor + cookie en el navegador que mantiene al usuario logueado entre peticiones | 5 |
+| Vista basada en clase (CBV) / `.as_view()` | Vista escrita como clase (como `LoginView`); `.as_view()` la conecta a una ruta | 5 |
+| Form bound / unbound | Con datos (`Form(request.POST)`) o vacío (`Form()`) | 5 |
+| `is_valid()` / `cleaned_data` | Corre las validaciones / datos ya validados y convertidos | 5 |
+| Post/Redirect/Get | Después de un POST exitoso, redirigir para que recargar no reenvíe el formulario | 5 |
+| CSRF | Ataque que envía formularios desde otro sitio; `{% csrf_token %}` lo bloquea | 5 |
