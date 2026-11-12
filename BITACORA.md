@@ -68,6 +68,11 @@ Además, este proyecto es la **entrega final de Django de la Diplomatura (Coderh
 | 2026-11-11 | Rutas de autenticación en `/accounts/` con namespace `accounts` | Convención de la documentación de Django |
 | 2026-11-11 | `LOGIN_URL`, `LOGIN_REDIRECT_URL` y `LOGOUT_REDIRECT_URL` con nombres de rutas | Se ajustan solos si cambian las URLs |
 | 2026-11-11 | Formularios con `{{ form }}` + reglas CSS propias (`.django-form`), sin `django-crispy-forms` | Sin dependencias extra; sirve para todos los formularios del sitio |
+| 2026-11-11 | `PostForm` con `fields` explícitos (`title`, `content`, `status`); el autor lo asigna la vista con `request.user` | Seguridad: nunca confiar en el navegador para datos que el servidor ya conoce; un campo nuevo no aparece sin decidirlo |
+| 2026-11-11 | Validación propia `clean_title`: mínimo 5 caracteres | Evitar títulos vacíos de contenido; mismo criterio que el profesor |
+| 2026-11-11 | El autor puede ver sus propios borradores en el detalle (marca "Draft"); para el resto, 404 (ajusta la decisión del 2026-11-10) | Después de crear un borrador, el redirect no puede terminar en 404; 404 y no 403 para no revelar que existe |
+| 2026-11-11 | Un solo template `post_form.html` con `page_title` y `button_text` | Se reutiliza para editar en la Etapa 7 |
+| 2026-11-11 | Mensajes (`django.contrib.messages`) mostrados en `base.html` con alertas de Bootstrap; `MESSAGE_TAGS` mapea `error` → `danger` | Cualquier vista puede dar feedback; los niveles coinciden con las clases de Bootstrap |
 
 ## 4. Proyectos de referencia
 
@@ -84,7 +89,7 @@ Lo que debería tener la versión final (✱ = obligatorio para la entrega de Co
 - [ ] ✱ Imagen en los posts (el template no se rompe si falta)
 - [ ] ✱ Perfil de usuario (con sus posts y borradores)
 - [ ] ✱ Rutas protegidas con `@login_required`
-- [ ] Mensajes de feedback ("Post published ✓")
+- [x] Mensajes de feedback ("Post published ✓")
 - [x] Borradores y publicados; URLs con slug
 - [ ] Búsqueda (opcional en la consigna) y paginación
 - [x] Diseño prolijo y responsive (Bootstrap)
@@ -103,7 +108,7 @@ Lo que debería tener la versión final (✱ = obligatorio para la entrega de Co
 | 3 | **Lista y detalle** (solo publicados), URLs con slug | `include`, namespace, vistas de función, QuerySets, `get_object_or_404`, `get_absolute_url` | ✅ |
 | 4 | **Templates y estilo**: `base.html`, navegación, Bootstrap, estáticos | `extends`/`block`, `DIRS`, `static`, `STATICFILES_DIRS` | ✅ |
 | 5 | **Autenticación**: registro, login, logout | `django.contrib.auth`, `UserCreationForm`, `request.user` | ✅ |
-| 6 | **Crear post** con `ModelForm` (autor = usuario logueado) | bound/unbound, `commit=False`, `messages`, `@login_required` | ⬜ |
+| 6 | **Crear post** con `ModelForm` (autor = usuario logueado) | bound/unbound, `commit=False`, `messages`, `@login_required` | ✅ |
 | 7 | **Editar y eliminar** (solo el autor) | `instance=`, borrar solo por POST, 403 | ⬜ |
 | 8 | **Imágenes en los posts** | `ImageField`, Pillow, `MEDIA_URL`/`MEDIA_ROOT`, `enctype` | ⬜ |
 | 9 | **Perfil** con mis posts y borradores | Filtrar por usuario y estado, `related_name` | ⬜ |
@@ -115,8 +120,8 @@ Lo que debería tener la versión final (✱ = obligatorio para la entrega de Co
 
 ## 7. Estado actual
 
-- **Última etapa completada:** 5 — Autenticación
-- **Próximo paso:** Etapa 6 — Crear post desde la web (`ModelForm`, `@login_required`, autor = usuario logueado)
+- **Última etapa completada:** 6 — Crear post
+- **Próximo paso:** Etapa 7 — Editar y eliminar posts (solo el autor)
 - **Pendientes / dudas abiertas:** idioma del README (inglés con sección en español, o al revés) → se decide en la Etapa 12
 
 ---
@@ -299,6 +304,34 @@ Lo que debería tener la versión final (✱ = obligatorio para la entrega de Co
 
 **Dudas para repasar:** —
 
+### Etapa 6 — Crear post (2026-11-11)
+
+**Objetivo:** que un usuario logueado cree posts desde la web, con el autor asignado automáticamente y mensajes de confirmación.
+
+**Archivos creados/modificados:** `blog/forms.py` (nuevo), `blog/views.py` (`post_create`, ajuste de `post_detail`), `blog/urls.py` (`new/`), `blog/templates/blog/post_form.html` (nuevo), `blog/templates/blog/post_detail.html` (marca "Draft"), `templates/base.html` (link "New post" y mensajes), `config/settings.py` (`MESSAGE_TAGS`).
+
+**Qué aprendí:**
+- `ModelForm` arma los campos desde el modelo, hereda sus validaciones y sabe guardar (`form.save()`). `fields` es la lista explícita de lo que el usuario puede tocar.
+- El autor no va en el formulario: cualquiera podría modificar el HTML desde el navegador. Se asigna en la vista con `request.user`.
+- `clean_<campo>()` es una validación propia de un campo: se ejecuta en `is_valid()`, usa `self.cleaned_data`, lanza `ValidationError` y siempre devuelve el valor limpio.
+- `@login_required` corta la vista si no hay sesión y redirige a `LOGIN_URL?next=<url>`; después del login, `next` devuelve al usuario a donde quería ir. Es la protección real (ocultar el link no alcanza).
+- `form.save(commit=False)` crea el objeto sin guardarlo, para completar campos (el autor) antes del `post.save()`.
+- `redirect(objeto)` usa `get_absolute_url()`.
+- Una ruta fija (`new/`) va antes de `<slug:slug>/`, o Django la toma como un slug.
+- `raise Http404` dentro de una vista; 404 en vez de 403 para no revelar que un borrador existe.
+- El framework de mensajes guarda el mensaje en la sesión y lo muestra una sola vez en la petición siguiente (sobrevive al redirect). `message.tags` → clase de Bootstrap (`alert-success`); `MESSAGE_TAGS` cambia `error` por `danger`.
+
+**Cómo verificar que funciona:** como anónimo, `/new/` redirige a `/accounts/login/?next=/new/` y después del login vuelve a `/new/`; el form vacío o con título corto muestra errores; un post publicado aparece en la lista con el mensaje "Post published."; un borrador muestra la marca amarilla solo a su autor y da 404 a los demás; en el admin el autor es el usuario logueado.
+
+**Errores que aparecieron y cómo los resolví:** `TemplateDoesNotExist: blog/post_form.html` → el archivo estaba en `blog/templates/` sin la subcarpeta `blog/`. El "Template-loader postmortem" de la página de error muestra cada ruta donde Django buscó; se compara con la ubicación real del archivo.
+
+**Commit(s):**
+- `Add post creation form with login required and author from session`
+- `Show feedback messages with Bootstrap alerts`
+- `Update project log for stage 6`
+
+**Dudas para repasar:** —
+
 ## 9. Conceptos aprendidos (glosario personal)
 
 > Completar con mis propias palabras a medida que avancemos.
@@ -347,3 +380,9 @@ Lo que debería tener la versión final (✱ = obligatorio para la entrega de Co
 | `is_valid()` / `cleaned_data` | Corre las validaciones / datos ya validados y convertidos | 5 |
 | Post/Redirect/Get | Después de un POST exitoso, redirigir para que recargar no reenvíe el formulario | 5 |
 | CSRF | Ataque que envía formularios desde otro sitio; `{% csrf_token %}` lo bloquea | 5 |
+| `clean_<campo>()` | Validación propia de un campo del formulario; devuelve el valor limpio o lanza `ValidationError` | 6 |
+| `@login_required` | Decorador que exige sesión iniciada para ejecutar la vista; si no, redirige al login con `next` | 6 |
+| `commit=False` | Crea el objeto desde el form sin guardarlo, para completar campos antes del `save()` | 6 |
+| `Http404` | Excepción que corta la vista y responde "no encontrado" | 6 |
+| Framework de mensajes | Avisos de una sola vez guardados en la sesión (`messages.success(request, "...")`) | 6 |
+| Decorador | Función que envuelve a otra para agregarle comportamiento (`@login_required`) | 6 |
