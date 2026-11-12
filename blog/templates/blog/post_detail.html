@@ -5,6 +5,9 @@
 {% block content %}
   <article>
     <h1>{{ post.title }}</h1>
+    {% if post.status == "draft" %}
+      <span class="badge text-bg-warning mb-2">Draft — only you can see this</span>
+    {% endif %}
     <p class="text-body-secondary">
       by {{ post.author }} · {{ post.created_at|date:"M j, Y" }}
     </p>
