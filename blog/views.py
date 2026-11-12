@@ -1,6 +1,7 @@
 from django.contrib.auth.decorators import login_required
 from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
+from django.contrib import messages
 
 from .forms import PostForm
 from .models import Post
@@ -25,6 +26,10 @@ def post_create(request):
             post = form.save(commit=False)
             post.author = request.user
             post.save()
+            if post.status == Post.Status.PUBLISHED:
+                messages.success(request, "Post published.")
+            else:
+                messages.success(request, "Draft saved. Only you can see it.")
             return redirect(post)
     else:
         form = PostForm()
