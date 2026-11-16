@@ -59,3 +59,14 @@ def post_edit(request, slug):
         "page_title": "Edit post",
         "button_text": "Save changes",
     })
+
+@login_required
+def post_delete(request, slug):
+    post = get_object_or_404(Post, slug=slug, author=request.user)
+
+    if request.method == "POST":
+        post.delete()
+        messages.success(request, "Post deleted.")
+        return redirect("blog:post_list")
+
+    return render(request, "blog/post_confirm_delete.html", {"post": post})

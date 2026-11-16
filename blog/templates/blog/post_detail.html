@@ -15,6 +15,7 @@
     {% if user == post.author %}
       <div class="mb-3">
         <a href="{% url 'blog:post_edit' post.slug %}" class="btn btn-outline-secondary btn-sm">Edit</a>
+        <a href="{% url 'blog:post_delete' post.slug %}" class="btn btn-outline-danger btn-sm">Delete</a>
       </div>
     {% endif %}
 
