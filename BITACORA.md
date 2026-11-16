@@ -73,6 +73,10 @@ Además, este proyecto es la **entrega final de Django de la Diplomatura (Coderh
 | 2026-11-11 | El autor puede ver sus propios borradores en el detalle (marca "Draft"); para el resto, 404 (ajusta la decisión del 2026-11-10) | Después de crear un borrador, el redirect no puede terminar en 404; 404 y no 403 para no revelar que existe |
 | 2026-11-11 | Un solo template `post_form.html` con `page_title` y `button_text` | Se reutiliza para editar en la Etapa 7 |
 | 2026-11-11 | Mensajes (`django.contrib.messages`) mostrados en `base.html` con alertas de Bootstrap; `MESSAGE_TAGS` mapea `error` → `danger` | Cualquier vista puede dar feedback; los niveles coinciden con las clases de Bootstrap |
+| 2026-11-16 | Editar y borrar: el post se busca **filtrando por autor** (`get_object_or_404(Post, slug=slug, author=request.user)`) → 404 si no es del usuario | Una sola línea, sin `if` que olvidar; no revela que un post (o borrador) existe, a diferencia de un 403 |
+| 2026-11-16 | Editar reutiliza `PostForm` y `post_form.html` con `instance=post` | Mismo formulario y template para crear y editar |
+| 2026-11-16 | Borrar en dos pasos: GET muestra la confirmación, solo POST borra | Un GET nunca modifica datos; evita borrados accidentales o provocados desde otro sitio |
+| 2026-11-16 | Cuando hay que cambiar un template, Claude pasa el **archivo completo** | Evitar errores al reemplazar partes de HTML |
 
 ## 4. Proyectos de referencia
 
@@ -84,11 +88,11 @@ Además, este proyecto es la **entrega final de Django de la Diplomatura (Coderh
 Lo que debería tener la versión final (✱ = obligatorio para la entrega de Coderhouse):
 
 - [x] ✱ Usuarios: registro, login y logout
-- [ ] ✱ Posts con autor = `User` real; solo el autor puede editar o borrar los suyos
-- [ ] ✱ CRUD completo desde la web, con validaciones y confirmación antes de borrar
+- [x] ✱ Posts con autor = `User` real; solo el autor puede editar o borrar los suyos
+- [x] ✱ CRUD completo desde la web, con validaciones y confirmación antes de borrar
 - [ ] ✱ Imagen en los posts (el template no se rompe si falta)
 - [ ] ✱ Perfil de usuario (con sus posts y borradores)
-- [ ] ✱ Rutas protegidas con `@login_required`
+- [x] ✱ Rutas protegidas con `@login_required` (crear, editar y borrar posts)
 - [x] Mensajes de feedback ("Post published ✓")
 - [x] Borradores y publicados; URLs con slug
 - [ ] Búsqueda (opcional en la consigna) y paginación
@@ -109,7 +113,7 @@ Lo que debería tener la versión final (✱ = obligatorio para la entrega de Co
 | 4 | **Templates y estilo**: `base.html`, navegación, Bootstrap, estáticos | `extends`/`block`, `DIRS`, `static`, `STATICFILES_DIRS` | ✅ |
 | 5 | **Autenticación**: registro, login, logout | `django.contrib.auth`, `UserCreationForm`, `request.user` | ✅ |
 | 6 | **Crear post** con `ModelForm` (autor = usuario logueado) | bound/unbound, `commit=False`, `messages`, `@login_required` | ✅ |
-| 7 | **Editar y eliminar** (solo el autor) | `instance=`, borrar solo por POST, 403 | ⬜ |
+| 7 | **Editar y eliminar** (solo el autor) | `instance=`, borrar solo por POST, filtrar por autor (404) | ✅ |
 | 8 | **Imágenes en los posts** | `ImageField`, Pillow, `MEDIA_URL`/`MEDIA_ROOT`, `enctype` | ⬜ |
 | 9 | **Perfil** con mis posts y borradores | Filtrar por usuario y estado, `related_name` | ⬜ |
 | 10 | **Búsqueda** | `forms.Form` por GET, `Q`, `icontains` | ⬜ |
@@ -120,8 +124,8 @@ Lo que debería tener la versión final (✱ = obligatorio para la entrega de Co
 
 ## 7. Estado actual
 
-- **Última etapa completada:** 6 — Crear post
-- **Próximo paso:** Etapa 7 — Editar y eliminar posts (solo el autor)
+- **Última etapa completada:** 7 — Editar y eliminar
+- **Próximo paso:** Etapa 8 — Imágenes en los posts (`ImageField`, Pillow, media)
 - **Pendientes / dudas abiertas:** idioma del README (inglés con sección en español, o al revés) → se decide en la Etapa 12
 
 ---
@@ -332,6 +336,35 @@ Lo que debería tener la versión final (✱ = obligatorio para la entrega de Co
 
 **Dudas para repasar:** —
 
+### Etapa 7 — Editar y eliminar (2026-11-16)
+
+**Objetivo:** completar el CRUD desde la web: el autor puede editar y borrar sus posts (con confirmación), y nadie más puede hacerlo.
+
+**Archivos creados/modificados:** `blog/views.py` (`post_edit`, `post_delete`), `blog/urls.py` (`<slug>/edit/`, `<slug>/delete/`), `blog/templates/blog/post_form.html` (Cancel según el caso), `blog/templates/blog/post_detail.html` (botones Edit/Delete para el autor), `blog/templates/blog/post_confirm_delete.html` (nuevo).
+
+**Qué aprendí:**
+- `PostForm(instance=post)` precarga el formulario; `PostForm(request.POST, instance=post)` + `save()` hace un `UPDATE`. Sin `instance` sería un `INSERT` (post nuevo).
+- Al editar no hace falta `commit=False`: el autor ya está asignado y no es un campo del form.
+- El slug no cambia al editar el título porque `save()` solo lo genera si está vacío.
+- Control de autor con la consulta: `get_object_or_404(Post, slug=slug, author=request.user)`. Si el post es de otro, para esa vista no existe (404).
+- Borrar: GET muestra la confirmación, POST borra (`post.delete()`). Un GET nunca debe modificar datos.
+- Un formulario sin `action` se envía a la misma URL donde está.
+- Después de borrar, redirect a la lista (el detalle ya no existe).
+- `{% if user == post.author %}` muestra los botones solo al autor; es interfaz, la protección es la vista.
+- En templates, una variable que no existe se trata como vacía (no da error).
+- HTML y templates se arman en pares que abren y cierran (`<div>`/`</div>`, `{% if %}`/`{% endif %}`).
+
+**Cómo verificar que funciona:** el autor edita con el form precargado, el slug no cambia y aparece "Post updated."; Delete muestra la confirmación y Cancel no borra; "Yes, delete" borra y muestra "Post deleted."; otro usuario no ve los botones y `/<slug>/edit/` y `/<slug>/delete/` le dan 404; un anónimo es redirigido al login.
+
+**Errores que aparecieron y cómo los resolví:** ninguno.
+
+**Commit(s):**
+- `Add post edit view restricted to the author`
+- `Add post delete with confirmation page`
+- `Update project log for stage 7`
+
+**Dudas para repasar:** —
+
 ## 9. Conceptos aprendidos (glosario personal)
 
 > Completar con mis propias palabras a medida que avancemos.
@@ -386,3 +419,7 @@ Lo que debería tener la versión final (✱ = obligatorio para la entrega de Co
 | `Http404` | Excepción que corta la vista y responde "no encontrado" | 6 |
 | Framework de mensajes | Avisos de una sola vez guardados en la sesión (`messages.success(request, "...")`) | 6 |
 | Decorador | Función que envuelve a otra para agregarle comportamiento (`@login_required`) | 6 |
+| `instance=` | Le dice al form qué objeto existente editar: precarga sus datos y `save()` hace `UPDATE` | 7 |
+| `.delete()` | Borra el objeto de la base (`DELETE`); no se puede deshacer | 7 |
+| GET seguro / POST para modificar | GET solo lee; todo lo que cambia datos (crear, editar, borrar, logout) va por POST | 7 |
+| Filtrar por dueño | Buscar el objeto con `author=request.user` para que solo el autor pueda modificarlo | 7 |
