@@ -12,6 +12,12 @@
       by {{ post.author }} · {{ post.created_at|date:"M j, Y" }}
     </p>
 
+    {% if user == post.author %}
+      <div class="mb-3">
+        <a href="{% url 'blog:post_edit' post.slug %}" class="btn btn-outline-secondary btn-sm">Edit</a>
+      </div>
+    {% endif %}
+
     <div class="mt-4">
       {{ post.content|linebreaks }}
     </div>

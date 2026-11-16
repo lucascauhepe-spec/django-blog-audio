@@ -39,3 +39,23 @@ def post_create(request):
         "page_title": "New post",
         "button_text": "Save post",
     })
+
+@login_required
+def post_edit(request, slug):
+    post = get_object_or_404(Post, slug=slug, author=request.user)
+
+    if request.method == "POST":
+        form = PostForm(request.POST, instance=post)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Post updated.")
+            return redirect(post)
+    else:
+        form = PostForm(instance=post)
+
+    return render(request, "blog/post_form.html", {
+        "form": form,
+        "post": post,
+        "page_title": "Edit post",
+        "button_text": "Save changes",
+    })
