@@ -46,3 +46,10 @@ article.card:hover {
   padding-left: 0;
   margin-bottom: 0.25rem;
 }
+
+/* Imágenes de portada en la lista */
+
+.card-img-top {
+  height: 220px;
+  object-fit: cover;
+}

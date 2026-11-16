@@ -7,7 +7,7 @@
     <div class="col-lg-8">
       <h1 class="mb-4">{{ page_title }}</h1>
 
-      <form method="post" class="django-form">
+      <form method="post" enctype="multipart/form-data" class="django-form">
         {% csrf_token %}
         {{ form }}
         <button type="submit" class="btn btn-primary">{{ button_text }}</button>

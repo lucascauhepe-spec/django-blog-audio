@@ -3,26 +3,35 @@
 {% block title %}{{ post.title }}{% endblock %}
 
 {% block content %}
-  <article>
-    <h1>{{ post.title }}</h1>
-    {% if post.status == "draft" %}
-      <span class="badge text-bg-warning mb-2">Draft — only you can see this</span>
-    {% endif %}
-    <p class="text-body-secondary">
-      by {{ post.author }} · {{ post.created_at|date:"M j, Y" }}
-    </p>
+  <div class="row justify-content-center">
+    <div class="col-lg-8">
+      <article>
+        <h1>{{ post.title }}</h1>
+        {% if post.status == "draft" %}
+          <span class="badge text-bg-warning mb-2">Draft — only you can see this</span>
+        {% endif %}
 
-    {% if user == post.author %}
-      <div class="mb-3">
-        <a href="{% url 'blog:post_edit' post.slug %}" class="btn btn-outline-secondary btn-sm">Edit</a>
-        <a href="{% url 'blog:post_delete' post.slug %}" class="btn btn-outline-danger btn-sm">Delete</a>
-      </div>
-    {% endif %}
+        <p class="text-body-secondary">
+          by {{ post.author }} · {{ post.created_at|date:"M j, Y" }}
+        </p>
 
-    <div class="mt-4">
-      {{ post.content|linebreaks }}
+        {% if user == post.author %}
+          <div class="mb-3">
+            <a href="{% url 'blog:post_edit' post.slug %}" class="btn btn-outline-secondary btn-sm">Edit</a>
+            <a href="{% url 'blog:post_delete' post.slug %}" class="btn btn-outline-danger btn-sm">Delete</a>
+          </div>
+        {% endif %}
+
+        {% if post.image %}
+          <img src="{{ post.image.url }}" alt="{{ post.title }}" class="img-fluid rounded mb-4">
+        {% endif %}
+
+        <div class="mt-4">
+          {{ post.content|linebreaks }}
+        </div>
+      </article>
+
+      <a href="{% url 'blog:post_list' %}" class="btn btn-link px-0 mt-3">← Back to all posts</a>
     </div>
-  </article>
-
-  <a href="{% url 'blog:post_list' %}" class="btn btn-link px-0 mt-3">← Back to all posts</a>
+  </div>
 {% endblock %}

@@ -1,7 +1,7 @@
+from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
-from django.contrib import messages
 
 from .forms import PostForm
 from .models import Post
@@ -18,10 +18,11 @@ def post_detail(request, slug):
         raise Http404
     return render(request, "blog/post_detail.html", {"post": post})
 
+
 @login_required
 def post_create(request):
     if request.method == "POST":
-        form = PostForm(request.POST)
+        form = PostForm(request.POST, request.FILES)
         if form.is_valid():
             post = form.save(commit=False)
             post.author = request.user
@@ -40,12 +41,13 @@ def post_create(request):
         "button_text": "Save post",
     })
 
+
 @login_required
 def post_edit(request, slug):
     post = get_object_or_404(Post, slug=slug, author=request.user)
 
     if request.method == "POST":
-        form = PostForm(request.POST, instance=post)
+        form = PostForm(request.POST, request.FILES, instance=post)
         if form.is_valid():
             form.save()
             messages.success(request, "Post updated.")
@@ -59,6 +61,7 @@ def post_edit(request, slug):
         "page_title": "Edit post",
         "button_text": "Save changes",
     })
+
 
 @login_required
 def post_delete(request, slug):
