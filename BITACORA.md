@@ -77,6 +77,11 @@ Además, este proyecto es la **entrega final de Django de la Diplomatura (Coderh
 | 2026-11-16 | Editar reutiliza `PostForm` y `post_form.html` con `instance=post` | Mismo formulario y template para crear y editar |
 | 2026-11-16 | Borrar en dos pasos: GET muestra la confirmación, solo POST borra | Un GET nunca modifica datos; evita borrados accidentales o provocados desde otro sitio |
 | 2026-11-16 | Cuando hay que cambiar un template, Claude pasa el **archivo completo** | Evitar errores al reemplazar partes de HTML |
+| 2026-11-16 | `Post.image = ImageField(upload_to="posts/", blank=True)`: imagen **opcional** | La consigna pide que el template no se rompa sin imagen; cada tipo de archivo en su subcarpeta |
+| 2026-11-16 | `media/` en `.gitignore` (igual que `db.sqlite3`) | Es contenido de los usuarios, no código; el README debe explicar cómo probar desde cero |
+| 2026-11-16 | Media servidos por Django solo con `DEBUG = True` (`static()` en `config/urls.py`) | En producción los sirve el servidor web |
+| 2026-11-16 | `requirements.txt` actualizado copiando la salida de `pip freeze` en VS Code | `>` en PowerShell guarda en UTF-16 y `Out-File` agrega BOM |
+| 2026-11-16 | Lista y detalle en una columna centrada (`col-lg-8`), igual que los formularios | Líneas de texto más cómodas de leer, imágenes menos estiradas, diseño coherente |
 
 ## 4. Proyectos de referencia
 
@@ -90,7 +95,7 @@ Lo que debería tener la versión final (✱ = obligatorio para la entrega de Co
 - [x] ✱ Usuarios: registro, login y logout
 - [x] ✱ Posts con autor = `User` real; solo el autor puede editar o borrar los suyos
 - [x] ✱ CRUD completo desde la web, con validaciones y confirmación antes de borrar
-- [ ] ✱ Imagen en los posts (el template no se rompe si falta)
+- [x] ✱ Imagen en los posts (el template no se rompe si falta)
 - [ ] ✱ Perfil de usuario (con sus posts y borradores)
 - [x] ✱ Rutas protegidas con `@login_required` (crear, editar y borrar posts)
 - [x] Mensajes de feedback ("Post published ✓")
@@ -114,7 +119,7 @@ Lo que debería tener la versión final (✱ = obligatorio para la entrega de Co
 | 5 | **Autenticación**: registro, login, logout | `django.contrib.auth`, `UserCreationForm`, `request.user` | ✅ |
 | 6 | **Crear post** con `ModelForm` (autor = usuario logueado) | bound/unbound, `commit=False`, `messages`, `@login_required` | ✅ |
 | 7 | **Editar y eliminar** (solo el autor) | `instance=`, borrar solo por POST, filtrar por autor (404) | ✅ |
-| 8 | **Imágenes en los posts** | `ImageField`, Pillow, `MEDIA_URL`/`MEDIA_ROOT`, `enctype` | ⬜ |
+| 8 | **Imágenes en los posts** | `ImageField`, Pillow, `MEDIA_URL`/`MEDIA_ROOT`, `enctype`, `request.FILES` | ✅ |
 | 9 | **Perfil** con mis posts y borradores | Filtrar por usuario y estado, `related_name` | ⬜ |
 | 10 | **Búsqueda** | `forms.Form` por GET, `Q`, `icontains` | ⬜ |
 | 11 | **Configuración**: `python-decouple`, `.env`, `.env.example` | Configuración por entorno, secretos | ⬜ |
@@ -124,9 +129,11 @@ Lo que debería tener la versión final (✱ = obligatorio para la entrega de Co
 
 ## 7. Estado actual
 
-- **Última etapa completada:** 7 — Editar y eliminar
-- **Próximo paso:** Etapa 8 — Imágenes en los posts (`ImageField`, Pillow, media)
-- **Pendientes / dudas abiertas:** idioma del README (inglés con sección en español, o al revés) → se decide en la Etapa 12
+- **Última etapa completada:** 8 — Imágenes en los posts
+- **Próximo paso:** Etapa 9 — Perfil de usuario con mis posts y borradores
+- **Pendientes / dudas abiertas:**
+  - Idioma del README (inglés con sección en español, o al revés) → se decide en la Etapa 12
+  - El README tiene que explicar que `db.sqlite3` y `media/` no están en el repo y cómo probar desde cero (`migrate`, `createsuperuser`, crear posts con imagen) → Etapa 12
 
 ---
 
@@ -365,6 +372,36 @@ Lo que debería tener la versión final (✱ = obligatorio para la entrega de Co
 
 **Dudas para repasar:** —
 
+### Etapa 8 — Imágenes en los posts (2026-11-16)
+
+**Objetivo:** que cada post pueda tener una imagen opcional, cargada desde el formulario y mostrada en la lista y el detalle, sin romper los templates cuando falta.
+
+**Archivos creados/modificados:** `requirements.txt` (Pillow), `blog/models.py` (`image`), `blog/migrations/0002_post_image.py` (nueva), `config/settings.py` (`MEDIA_URL`, `MEDIA_ROOT`), `config/urls.py` (servir media en desarrollo), `.gitignore` (`media/`), `blog/forms.py`, `blog/views.py` (`request.FILES`), `blog/templates/blog/post_form.html` (`enctype`), `post_list.html` y `post_detail.html` (imagen + columna centrada), `static/css/styles.css` (`.card-img-top`).
+
+**Qué aprendí:**
+- Estáticos (archivos del sitio, van al repo) vs. media (archivos que suben los usuarios, no van al repo).
+- `ImageField` necesita Pillow, que valida que el archivo sea una imagen. En la base se guarda la ruta del archivo (texto); el archivo va al disco en `MEDIA_ROOT`.
+- `upload_to` es la subcarpeta dentro de `media/`. Para campos de texto/archivo opcionales: `blank=True` sin `null=True`.
+- Agregar un campo opcional a una tabla con datos no pide valores para las filas existentes; uno obligatorio sí.
+- `MEDIA_ROOT` es la carpeta en disco, `MEDIA_URL` el prefijo de la URL. `runserver` no sirve media solo: hace falta `static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)` dentro de `if settings.DEBUG`.
+- Para subir archivos hacen falta dos cosas: `enctype="multipart/form-data"` en el `<form>` (el navegador los envía) y `request.FILES` en la vista (Django los recibe). Sin `enctype` el error es silencioso.
+- `{{ post.image.url }}` arma la URL; pedirla sin archivo da error, por eso va dentro de `{% if post.image %}`.
+- El widget de `ImageField` muestra la imagen actual y un checkbox "Clear" al editar.
+- Django no borra del disco los archivos viejos al cambiar o quitar la imagen ni al borrar el post.
+- Bootstrap: `img-fluid` achica la imagen para que entre (nunca la agranda); `card-img-top`. CSS: `object-fit: cover` recorta sin deformar.
+- Grilla `row justify-content-center` + `col-lg-8` para una columna centrada de lectura.
+
+**Cómo verificar que funciona:** un post con imagen la muestra en la tarjeta (220 px, recortada) y en el detalle; un post sin imagen se ve bien; la imagen está en `media/posts/` y se pide en `/media/posts/...`; al editar se puede cambiar o quitar con "Clear"; un archivo que no es imagen da error; `git status` no muestra `media/`.
+
+**Errores que aparecieron y cómo los resolví:** la imagen de la lista se veía a tamaño completo → el navegador usaba el CSS viejo en caché; se resolvió con `Ctrl+F5`.
+
+**Commit(s):**
+- `Add Pillow and optional image field to Post`
+- `Allow uploading and displaying post images`
+- `Update project log for stage 8`
+
+**Dudas para repasar:** —
+
 ## 9. Conceptos aprendidos (glosario personal)
 
 > Completar con mis propias palabras a medida que avancemos.
@@ -423,3 +460,8 @@ Lo que debería tener la versión final (✱ = obligatorio para la entrega de Co
 | `.delete()` | Borra el objeto de la base (`DELETE`); no se puede deshacer | 7 |
 | GET seguro / POST para modificar | GET solo lee; todo lo que cambia datos (crear, editar, borrar, logout) va por POST | 7 |
 | Filtrar por dueño | Buscar el objeto con `author=request.user` para que solo el autor pueda modificarlo | 7 |
+| Media | Archivos que suben los usuarios (`MEDIA_ROOT` en disco, `MEDIA_URL` en la URL) | 8 |
+| `ImageField` / Pillow | Campo para imágenes (guarda la ruta en la base) / librería que valida y lee imágenes | 8 |
+| `request.FILES` | Donde llegan los archivos subidos (separados de `request.POST`) | 8 |
+| `enctype="multipart/form-data"` | Atributo del `<form>` que permite enviar archivos | 8 |
+| `object-fit: cover` | CSS: la imagen llena su espacio recortándose, sin deformarse | 8 |
