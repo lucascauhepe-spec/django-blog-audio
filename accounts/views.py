@@ -1,10 +1,11 @@
+from django.contrib import messages
 from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import redirect, render
 
 from blog.models import Post
 
-from .forms import SignUpForm
+from .forms import ProfileForm, SignUpForm
 
 
 def signup(request):
@@ -33,3 +34,17 @@ def profile(request):
         "drafts": drafts,
         "published": published,
     })
+
+
+@login_required
+def profile_edit(request):
+    if request.method == "POST":
+        form = ProfileForm(request.POST, instance=request.user)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Profile updated.")
+            return redirect("accounts:profile")
+    else:
+        form = ProfileForm(instance=request.user)
+
+    return render(request, "accounts/profile_form.html", {"form": form})
