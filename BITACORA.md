@@ -82,6 +82,11 @@ Además, este proyecto es la **entrega final de Django de la Diplomatura (Coderh
 | 2026-11-16 | Media servidos por Django solo con `DEBUG = True` (`static()` en `config/urls.py`) | En producción los sirve el servidor web |
 | 2026-11-16 | `requirements.txt` actualizado copiando la salida de `pip freeze` en VS Code | `>` en PowerShell guarda en UTF-16 y `Out-File` agrega BOM |
 | 2026-11-16 | Lista y detalle en una columna centrada (`col-lg-8`), igual que los formularios | Líneas de texto más cómodas de leer, imágenes menos estiradas, diseño coherente |
+| 2026-11-17 | Perfil **privado** en `/accounts/profile/` (`@login_required`): cada usuario ve solo el suyo | Muestra borradores; un perfil público por autor queda como extra |
+| 2026-11-17 | El perfil vive en `accounts` e importa `Post` de `blog` | Es sobre el usuario; la dependencia va en un solo sentido (`accounts` → `blog`) |
+| 2026-11-17 | Posts del perfil con `request.user.posts`, separados en borradores y publicados | La consulta parte del usuario logueado: nunca trae posts de otro |
+| 2026-11-17 | Editar perfil con `ProfileForm` (`first_name`, `last_name`, `email`) e `instance=request.user`, sin id en la URL | `fields` explícitos para que nadie pueda tocar `is_staff`/`is_superuser`; cada uno edita solo lo suyo |
+| 2026-11-17 | Cambiar username y contraseña queda fuera del alcance | Son flujos aparte con sus propias validaciones |
 
 ## 4. Proyectos de referencia
 
@@ -96,8 +101,8 @@ Lo que debería tener la versión final (✱ = obligatorio para la entrega de Co
 - [x] ✱ Posts con autor = `User` real; solo el autor puede editar o borrar los suyos
 - [x] ✱ CRUD completo desde la web, con validaciones y confirmación antes de borrar
 - [x] ✱ Imagen en los posts (el template no se rompe si falta)
-- [ ] ✱ Perfil de usuario (con sus posts y borradores)
-- [x] ✱ Rutas protegidas con `@login_required` (crear, editar y borrar posts)
+- [x] ✱ Perfil de usuario (con sus posts y borradores) + editar nombre y email
+- [x] ✱ Rutas protegidas con `@login_required` (crear, editar y borrar posts; ver y editar perfil)
 - [x] Mensajes de feedback ("Post published ✓")
 - [x] Borradores y publicados; URLs con slug
 - [ ] Búsqueda (opcional en la consigna) y paginación
@@ -120,7 +125,7 @@ Lo que debería tener la versión final (✱ = obligatorio para la entrega de Co
 | 6 | **Crear post** con `ModelForm` (autor = usuario logueado) | bound/unbound, `commit=False`, `messages`, `@login_required` | ✅ |
 | 7 | **Editar y eliminar** (solo el autor) | `instance=`, borrar solo por POST, filtrar por autor (404) | ✅ |
 | 8 | **Imágenes en los posts** | `ImageField`, Pillow, `MEDIA_URL`/`MEDIA_ROOT`, `enctype`, `request.FILES` | ✅ |
-| 9 | **Perfil** con mis posts y borradores | Filtrar por usuario y estado, `related_name` | ⬜ |
+| 9 | **Perfil** con mis posts y borradores | Filtrar por usuario y estado, `related_name`, `instance=request.user` | ✅ |
 | 10 | **Búsqueda** | `forms.Form` por GET, `Q`, `icontains` | ⬜ |
 | 11 | **Configuración**: `python-decouple`, `.env`, `.env.example` | Configuración por entorno, secretos | ⬜ |
 | 12 | **README** + revisión con el checklist de la consigna → **ENTREGA** | Documentar y presentar | ⬜ |
@@ -129,8 +134,8 @@ Lo que debería tener la versión final (✱ = obligatorio para la entrega de Co
 
 ## 7. Estado actual
 
-- **Última etapa completada:** 8 — Imágenes en los posts
-- **Próximo paso:** Etapa 9 — Perfil de usuario con mis posts y borradores
+- **Última etapa completada:** 9 — Perfil de usuario
+- **Próximo paso:** Etapa 10 — Búsqueda por título o contenido
 - **Pendientes / dudas abiertas:**
   - Idioma del README (inglés con sección en español, o al revés) → se decide en la Etapa 12
   - El README tiene que explicar que `db.sqlite3` y `media/` no están en el repo y cómo probar desde cero (`migrate`, `createsuperuser`, crear posts con imagen) → Etapa 12
@@ -402,6 +407,33 @@ Lo que debería tener la versión final (✱ = obligatorio para la entrega de Co
 
 **Dudas para repasar:** —
 
+### Etapa 9 — Perfil de usuario (2026-11-17)
+
+**Objetivo:** una página de perfil privada con los datos del usuario y todos sus posts (borradores y publicados), y un formulario para editar nombre y email.
+
+**Archivos creados/modificados:** `accounts/views.py` (`profile`, `profile_edit`), `accounts/urls.py` (`profile/`, `profile/edit/`), `accounts/forms.py` (`ProfileForm`), `accounts/templates/accounts/profile.html` y `profile_form.html` (nuevos), `templates/base.html` ("Hi, usuario" enlaza al perfil).
+
+**Qué aprendí:**
+- `request.user.posts.all()` usa el `related_name` para traer los posts del usuario; a un QuerySet se le pueden encadenar más `filter()`.
+- Si la consulta parte de `request.user`, no hace falta controlar que los datos sean del usuario.
+- Una app puede importar modelos de otra (`from blog.models import Post`); conviene que la dependencia vaya en un solo sentido. Orden de imports: Django, otras apps del proyecto, la misma app.
+- Templates de vistas propias en `app/templates/app/`; `registration/` es solo para las vistas de autenticación de Django.
+- `AbstractUser` trae `get_full_name()` y `date_joined`. Filtro `|length` para contar.
+- Editar el propio perfil con `instance=request.user`: la URL no lleva id, así que nadie puede pedir el perfil de otro.
+- `fields` explícitos en un `ModelForm` sobre `User` evitan que alguien se dé permisos (`is_staff`, `is_superuser`).
+- Bootstrap: `list-group`, `d-flex justify-content-between`, `badge`.
+
+**Cómo verificar que funciona:** como anónimo, `/accounts/profile/` y `/accounts/profile/edit/` redirigen al login; "Hi, usuario" lleva al perfil con borradores y publicados separados y sus cantidades; otro usuario ve solo sus posts; editar nombre y email muestra "Profile updated." y un email inválido da error; en el admin, staff status no cambia.
+
+**Errores que aparecieron y cómo los resolví:** ninguno.
+
+**Commit(s):**
+- `Add user profile page with own posts and drafts`
+- `Add profile edit form for name and email`
+- `Update project log for stage 9`
+
+**Dudas para repasar:** —
+
 ## 9. Conceptos aprendidos (glosario personal)
 
 > Completar con mis propias palabras a medida que avancemos.
@@ -465,3 +497,6 @@ Lo que debería tener la versión final (✱ = obligatorio para la entrega de Co
 | `request.FILES` | Donde llegan los archivos subidos (separados de `request.POST`) | 8 |
 | `enctype="multipart/form-data"` | Atributo del `<form>` que permite enviar archivos | 8 |
 | `object-fit: cover` | CSS: la imagen llena su espacio recortándose, sin deformarse | 8 |
+| Relación inversa | Desde el usuario hacia sus posts: `user.posts.all()` (nombre definido por `related_name`) | 9 |
+| Encadenar filtros | `qs.filter(...).filter(...)`: cada filtro agrega una condición (AND) | 9 |
+| `get_full_name()` / `date_joined` | Método y campo que trae `AbstractUser`: nombre completo y fecha de alta | 9 |
