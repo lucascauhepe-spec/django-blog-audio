@@ -87,6 +87,10 @@ Además, este proyecto es la **entrega final de Django de la Diplomatura (Coderh
 | 2026-11-17 | Posts del perfil con `request.user.posts`, separados en borradores y publicados | La consulta parte del usuario logueado: nunca trae posts de otro |
 | 2026-11-17 | Editar perfil con `ProfileForm` (`first_name`, `last_name`, `email`) e `instance=request.user`, sin id en la URL | `fields` explícitos para que nadie pueda tocar `is_staff`/`is_superuser`; cada uno edita solo lo suyo |
 | 2026-11-17 | Cambiar username y contraseña queda fuera del alcance | Son flujos aparte con sus propias validaciones |
+| 2026-11-18 | Búsqueda por **GET** en la misma lista (`/?q=...`), con `SearchForm` (`forms.Form`) | Buscar no modifica datos; la búsqueda queda en la URL (se comparte, funciona "atrás"), sin `csrf_token` |
+| 2026-11-18 | Busca en título **o** contenido con `Q(...) \| Q(...)` e `icontains` | Lo que pide la consigna; sin importar mayúsculas |
+| 2026-11-18 | La búsqueda se aplica sobre los publicados | Un borrador nunca aparece en resultados |
+| 2026-11-18 | Caja de búsqueda con `{{ form.q }}` y clases de Bootstrap en `attrs` | Input y botón en línea; el form recuerda lo buscado |
 
 ## 4. Proyectos de referencia
 
@@ -105,7 +109,8 @@ Lo que debería tener la versión final (✱ = obligatorio para la entrega de Co
 - [x] ✱ Rutas protegidas con `@login_required` (crear, editar y borrar posts; ver y editar perfil)
 - [x] Mensajes de feedback ("Post published ✓")
 - [x] Borradores y publicados; URLs con slug
-- [ ] Búsqueda (opcional en la consigna) y paginación
+- [x] Búsqueda por título o contenido, con aviso si no hay resultados (opcional en la consigna)
+- [ ] Paginación
 - [x] Diseño prolijo y responsive (Bootstrap)
 - [ ] Tests automáticos
 - [ ] ✱ Secretos fuera del código (`.env` + `.env.example`), `requirements.txt` actualizado
@@ -126,7 +131,7 @@ Lo que debería tener la versión final (✱ = obligatorio para la entrega de Co
 | 7 | **Editar y eliminar** (solo el autor) | `instance=`, borrar solo por POST, filtrar por autor (404) | ✅ |
 | 8 | **Imágenes en los posts** | `ImageField`, Pillow, `MEDIA_URL`/`MEDIA_ROOT`, `enctype`, `request.FILES` | ✅ |
 | 9 | **Perfil** con mis posts y borradores | Filtrar por usuario y estado, `related_name`, `instance=request.user` | ✅ |
-| 10 | **Búsqueda** | `forms.Form` por GET, `Q`, `icontains` | ⬜ |
+| 10 | **Búsqueda** | `forms.Form` por GET, `request.GET`, `Q`, `icontains` | ✅ |
 | 11 | **Configuración**: `python-decouple`, `.env`, `.env.example` | Configuración por entorno, secretos | ⬜ |
 | 12 | **README** + revisión con el checklist de la consigna → **ENTREGA** | Documentar y presentar | ⬜ |
 
@@ -134,8 +139,8 @@ Lo que debería tener la versión final (✱ = obligatorio para la entrega de Co
 
 ## 7. Estado actual
 
-- **Última etapa completada:** 9 — Perfil de usuario
-- **Próximo paso:** Etapa 10 — Búsqueda por título o contenido
+- **Última etapa completada:** 10 — Búsqueda
+- **Próximo paso:** Etapa 11 — Configuración con `python-decouple`, `.env` y `.env.example`
 - **Pendientes / dudas abiertas:**
   - Idioma del README (inglés con sección en español, o al revés) → se decide en la Etapa 12
   - El README tiene que explicar que `db.sqlite3` y `media/` no están en el repo y cómo probar desde cero (`migrate`, `createsuperuser`, crear posts con imagen) → Etapa 12
@@ -434,6 +439,32 @@ Lo que debería tener la versión final (✱ = obligatorio para la entrega de Co
 
 **Dudas para repasar:** —
 
+### Etapa 10 — Búsqueda (2026-11-18)
+
+**Objetivo:** buscar posts publicados por título o contenido desde la lista, mostrando los resultados y un aviso cuando no hay coincidencias.
+
+**Archivos creados/modificados:** `blog/forms.py` (`SearchForm`), `blog/views.py` (`post_list`), `blog/templates/blog/post_list.html` (caja de búsqueda y mensajes).
+
+**Qué aprendí:**
+- `forms.Form` es un formulario sin modelo: valida y limpia datos pero no guarda nada.
+- Los formularios que solo leen van por GET: los datos viajan en la URL (`?q=...`), están en `request.GET` y no hace falta `{% csrf_token %}`.
+- `Form(request.GET or None)`: sin parámetros el form queda unbound e `is_valid()` da `False` sin mostrar errores.
+- Varias condiciones en un `filter()` se combinan con AND; `Q(...) | Q(...)` permite OR (y `&` para AND).
+- Lookups: `campo__icontains` = contiene el texto, sin importar mayúsculas (`LIKE '%texto%'` en SQL).
+- Encadenar la búsqueda sobre el QuerySet de publicados garantiza que no aparezcan borradores.
+- `attrs` en el widget agrega atributos HTML (clase de Bootstrap, `placeholder`, `aria-label`); `{{ form.q }}` dibuja solo el input.
+- Filtro `pluralize` ("1 result", "2 results"). Lo que escribe el usuario se escapa al mostrarlo.
+
+**Cómo verificar que funciona:** buscar una palabra del título o del contenido la encuentra (sin importar mayúsculas) y muestra la cantidad de resultados; la URL queda como `/?q=...` y la caja conserva el texto; el título de un borrador no aparece; una palabra inexistente muestra "No posts match..."; "Clear search" y la búsqueda vacía muestran todos los posts.
+
+**Errores que aparecieron y cómo los resolví:** ninguno.
+
+**Commit(s):**
+- `Add post search by title or content`
+- `Update project log for stage 10`
+
+**Dudas para repasar:** —
+
 ## 9. Conceptos aprendidos (glosario personal)
 
 > Completar con mis propias palabras a medida que avancemos.
@@ -500,3 +531,8 @@ Lo que debería tener la versión final (✱ = obligatorio para la entrega de Co
 | Relación inversa | Desde el usuario hacia sus posts: `user.posts.all()` (nombre definido por `related_name`) | 9 |
 | Encadenar filtros | `qs.filter(...).filter(...)`: cada filtro agrega una condición (AND) | 9 |
 | `get_full_name()` / `date_joined` | Método y campo que trae `AbstractUser`: nombre completo y fecha de alta | 9 |
+| `forms.Form` | Formulario sin modelo: valida datos que se usan para otra cosa (búsqueda, contacto) | 10 |
+| `request.GET` | Diccionario con los parámetros de la URL (`?q=mic` → `{"q": "mic"}`) | 10 |
+| `Q` | Objeto para combinar condiciones de un filtro con OR (`\|`) o AND (`&`) | 10 |
+| Lookup (`__icontains`) | Forma de comparar un campo en un filtro: contiene el texto, sin importar mayúsculas | 10 |
+| `pluralize` | Filtro que agrega "s" cuando el número no es 1 | 10 |
