@@ -16,3 +16,15 @@ class PostForm(forms.ModelForm):
         if len(title) < 5:
             raise forms.ValidationError("The title must be at least 5 characters long.")
         return title
+
+
+class SearchForm(forms.Form):
+    q = forms.CharField(
+        required=False,
+        max_length=100,
+        widget=forms.TextInput(attrs={
+            "class": "form-control",
+            "placeholder": "Search posts...",
+            "aria-label": "Search posts",
+        }),
+    )

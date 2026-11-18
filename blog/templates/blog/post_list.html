@@ -7,6 +7,18 @@
     <div class="col-lg-8">
       <h1 class="mb-4">Latest posts</h1>
 
+      <form method="get" action="{% url 'blog:post_list' %}" class="d-flex gap-2 mb-4" role="search">
+        {{ form.q }}
+        <button type="submit" class="btn btn-outline-primary">Search</button>
+      </form>
+
+      {% if query %}
+        <p class="text-body-secondary">
+          {{ posts|length }} result{{ posts|length|pluralize }} for "{{ query }}" ·
+          <a href="{% url 'blog:post_list' %}">Clear search</a>
+        </p>
+      {% endif %}
+
       {% for post in posts %}
         <article class="card mb-3">
           {% if post.image %}
@@ -26,7 +38,11 @@
           </div>
         </article>
       {% empty %}
-        <p class="text-body-secondary">No posts yet.</p>
+        {% if query %}
+          <p class="text-body-secondary">No posts match "{{ query }}". Try another word.</p>
+        {% else %}
+          <p class="text-body-secondary">No posts yet.</p>
+        {% endif %}
       {% endfor %}
     </div>
   </div>

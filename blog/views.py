@@ -1,15 +1,30 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.db.models import Q
 from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
 
-from .forms import PostForm
+from .forms import PostForm, SearchForm
 from .models import Post
 
 
 def post_list(request):
     posts = Post.objects.filter(status=Post.Status.PUBLISHED).select_related("author")
-    return render(request, "blog/post_list.html", {"posts": posts})
+    form = SearchForm(request.GET or None)
+    query = ""
+
+    if form.is_valid():
+        query = form.cleaned_data["q"]
+        if query:
+            posts = posts.filter(
+                Q(title__icontains=query) | Q(content__icontains=query)
+            )
+
+    return render(request, "blog/post_list.html", {
+        "posts": posts,
+        "form": form,
+        "query": query,
+    })
 
 
 def post_detail(request, slug):
