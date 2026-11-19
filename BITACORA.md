@@ -96,6 +96,9 @@ Además, este proyecto es la **entrega final de Django de la Diplomatura (Coderh
 | 2026-11-19 | `SECRET_KEY` sin `default` (si falta, Django no arranca) | Mejor un error claro que arrancar con una clave inventada |
 | 2026-11-19 | `DEBUG` con `default=False` y `cast=bool` | Seguro por defecto; sin `cast`, el texto `"False"` sería verdadero |
 | 2026-11-19 | `.env.example` con `SECRET_KEY=change-me` y `DEBUG=True` | El evaluador lo copia como `.env` y el proyecto funciona en local con estilos e imágenes |
+| 2026-11-19 | README **en español** para la entrega; versión en inglés más adelante, si el proyecto sigue creciendo como portfolio | Los evaluadores de Coderhouse hablan español |
+| 2026-11-19 | README con instalación para Windows y macOS/Linux, tabla de variables, rutas y "probar desde cero" | Que cualquiera pueda clonar, instalar y probar sin `db.sqlite3` ni `media/` |
+| 2026-11-19 | Verificación final clonando el repo en otra carpeta y siguiendo el README | Es exactamente lo que va a hacer el evaluador |
 
 ## 4. Proyectos de referencia
 
@@ -120,7 +123,7 @@ Lo que debería tener la versión final (✱ = obligatorio para la entrega de Co
 - [ ] Tests automáticos
 - [x] ✱ Secretos fuera del código (`.env` + `.env.example`), `requirements.txt` actualizado
 - [ ] Deploy con URL pública
-- [ ] ✱ README con descripción, tecnologías, instalación y autor
+- [x] ✱ README con descripción, tecnologías, instalación y autor
 
 ## 6. Hoja de ruta
 
@@ -138,18 +141,16 @@ Lo que debería tener la versión final (✱ = obligatorio para la entrega de Co
 | 9 | **Perfil** con mis posts y borradores | Filtrar por usuario y estado, `related_name`, `instance=request.user` | ✅ |
 | 10 | **Búsqueda** | `forms.Form` por GET, `request.GET`, `Q`, `icontains` | ✅ |
 | 11 | **Configuración**: `python-decouple`, `.env`, `.env.example` | Configuración por entorno, secretos, `config()`, `cast` | ✅ |
-| 12 | **README** + revisión con el checklist de la consigna → **ENTREGA** | Documentar y presentar | ⬜ |
+| 12 | **README** + revisión con el checklist de la consigna → **ENTREGA** | Documentar y presentar | ✅ |
 
 **Después de la entrega:** tests, paginación, deploy en PythonAnywhere, categorías, avatar de usuario, comentarios, CBVs.
 
 ## 7. Estado actual
 
-- **Última etapa completada:** 11 — Configuración con `python-decouple`
-- **Próximo paso:** Etapa 12 — README + revisión final con el checklist de la consigna → **ENTREGA**
-- **Pendientes / dudas abiertas:**
-  - Idioma del README (inglés con sección en español, o al revés) → se decide en la Etapa 12
-  - El README tiene que explicar que `db.sqlite3` y `media/` no están en el repo y cómo probar desde cero (`migrate`, `createsuperuser`, crear posts con imagen) → Etapa 12
-  - El README tiene que indicar que hay que copiar `.env.example` como `.env` antes de arrancar → Etapa 12
+- **Última etapa completada:** 12 — README y revisión final. **Proyecto listo para la entrega.**
+- **Próximo paso:** entregar la URL del repo en Coderhouse: https://github.com/lucascauhepe-spec/django-blog-audio
+- **Después de la entrega (portfolio):** tests automáticos, paginación, deploy en PythonAnywhere, README en inglés, categorías, avatar de usuario, perfil público por autor, comentarios, CBVs.
+- **Pendientes / dudas abiertas:** —
 
 ---
 
@@ -498,6 +499,29 @@ Lo que debería tener la versión final (✱ = obligatorio para la entrega de Co
 
 **Dudas para repasar:** —
 
+### Etapa 12 — README y revisión final (2026-11-19)
+
+**Objetivo:** documentar el proyecto para que cualquiera pueda instalarlo y probarlo, y verificar todos los criterios de la consigna antes de entregar.
+
+**Archivos creados/modificados:** `README.md` (nuevo), `BITACORA.md`.
+
+**Qué aprendí:**
+- Un README útil responde: qué es, qué hace, con qué está hecho, cómo se instala y se prueba, y quién lo hizo.
+- Las instrucciones tienen que cubrir lo que no está en el repo: `.env` (se copia de `.env.example`), la base (`migrate`), el superusuario y las imágenes (se suben desde el sitio).
+- La mejor prueba de una entrega es clonar el repo en otra carpeta, con un entorno virtual nuevo, y seguir el README al pie de la letra: si falta una migración, una dependencia o un archivo sin commitear, aparece ahí.
+- `deactivate` sale del entorno virtual activo.
+- GitHub muestra el `README.md` automáticamente en la página del repo.
+
+**Cómo verificar que funciona:** el clon limpio instala, migra y arranca siguiendo solo el README; todas las pruebas de "Probar el proyecto desde cero" funcionan; el README se ve bien en GitHub; todos los criterios del checklist de la consigna están cumplidos.
+
+**Errores que aparecieron y cómo los resolví:** ninguno.
+
+**Commit(s):**
+- `Add README with project description and setup instructions`
+- `Final: project log for stage 12, ready for delivery`
+
+**Dudas para repasar:** —
+
 ## 9. Conceptos aprendidos (glosario personal)
 
 > Completar con mis propias palabras a medida que avancemos.
@@ -573,3 +597,6 @@ Lo que debería tener la versión final (✱ = obligatorio para la entrega de Co
 | `.env.example` | Plantilla versionada con los nombres de las variables, sin valores reales | 11 |
 | `SECRET_KEY` | Clave que Django usa para firmar sesiones y tokens; nunca va en el repo | 11 |
 | `config()` / `cast` | Función de `python-decouple` que lee una variable / convierte el texto al tipo correcto | 11 |
+| `README.md` | Documento principal del repo: qué es el proyecto y cómo instalarlo y usarlo | 12 |
+| `git clone` | Descarga una copia completa de un repo, con todo su historial | 12 |
+| `deactivate` | Sale del entorno virtual activo | 12 |
