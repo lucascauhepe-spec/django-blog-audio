@@ -91,6 +91,11 @@ Además, este proyecto es la **entrega final de Django de la Diplomatura (Coderh
 | 2026-11-18 | Busca en título **o** contenido con `Q(...) \| Q(...)` e `icontains` | Lo que pide la consigna; sin importar mayúsculas |
 | 2026-11-18 | La búsqueda se aplica sobre los publicados | Un borrador nunca aparece en resultados |
 | 2026-11-18 | Caja de búsqueda con `{{ form.q }}` y clases de Bootstrap en `attrs` | Input y botón en línea; el form recuerda lo buscado |
+| 2026-11-19 | `SECRET_KEY`, `DEBUG` y `ALLOWED_HOSTS` se leen del `.env` con `python-decouple` | Separar código y configuración; sin secretos en el repo |
+| 2026-11-19 | **`SECRET_KEY` nueva**; la vieja queda en el historial de Git pero ya no se usa | El historial público no se reescribe; una clave expuesta se reemplaza |
+| 2026-11-19 | `SECRET_KEY` sin `default` (si falta, Django no arranca) | Mejor un error claro que arrancar con una clave inventada |
+| 2026-11-19 | `DEBUG` con `default=False` y `cast=bool` | Seguro por defecto; sin `cast`, el texto `"False"` sería verdadero |
+| 2026-11-19 | `.env.example` con `SECRET_KEY=change-me` y `DEBUG=True` | El evaluador lo copia como `.env` y el proyecto funciona en local con estilos e imágenes |
 
 ## 4. Proyectos de referencia
 
@@ -113,7 +118,7 @@ Lo que debería tener la versión final (✱ = obligatorio para la entrega de Co
 - [ ] Paginación
 - [x] Diseño prolijo y responsive (Bootstrap)
 - [ ] Tests automáticos
-- [ ] ✱ Secretos fuera del código (`.env` + `.env.example`), `requirements.txt` actualizado
+- [x] ✱ Secretos fuera del código (`.env` + `.env.example`), `requirements.txt` actualizado
 - [ ] Deploy con URL pública
 - [ ] ✱ README con descripción, tecnologías, instalación y autor
 
@@ -132,18 +137,19 @@ Lo que debería tener la versión final (✱ = obligatorio para la entrega de Co
 | 8 | **Imágenes en los posts** | `ImageField`, Pillow, `MEDIA_URL`/`MEDIA_ROOT`, `enctype`, `request.FILES` | ✅ |
 | 9 | **Perfil** con mis posts y borradores | Filtrar por usuario y estado, `related_name`, `instance=request.user` | ✅ |
 | 10 | **Búsqueda** | `forms.Form` por GET, `request.GET`, `Q`, `icontains` | ✅ |
-| 11 | **Configuración**: `python-decouple`, `.env`, `.env.example` | Configuración por entorno, secretos | ⬜ |
+| 11 | **Configuración**: `python-decouple`, `.env`, `.env.example` | Configuración por entorno, secretos, `config()`, `cast` | ✅ |
 | 12 | **README** + revisión con el checklist de la consigna → **ENTREGA** | Documentar y presentar | ⬜ |
 
 **Después de la entrega:** tests, paginación, deploy en PythonAnywhere, categorías, avatar de usuario, comentarios, CBVs.
 
 ## 7. Estado actual
 
-- **Última etapa completada:** 10 — Búsqueda
-- **Próximo paso:** Etapa 11 — Configuración con `python-decouple`, `.env` y `.env.example`
+- **Última etapa completada:** 11 — Configuración con `python-decouple`
+- **Próximo paso:** Etapa 12 — README + revisión final con el checklist de la consigna → **ENTREGA**
 - **Pendientes / dudas abiertas:**
   - Idioma del README (inglés con sección en español, o al revés) → se decide en la Etapa 12
   - El README tiene que explicar que `db.sqlite3` y `media/` no están en el repo y cómo probar desde cero (`migrate`, `createsuperuser`, crear posts con imagen) → Etapa 12
+  - El README tiene que indicar que hay que copiar `.env.example` como `.env` antes de arrancar → Etapa 12
 
 ---
 
@@ -465,6 +471,33 @@ Lo que debería tener la versión final (✱ = obligatorio para la entrega de Co
 
 **Dudas para repasar:** —
 
+### Etapa 11 — Configuración con python-decouple (2026-11-19)
+
+**Objetivo:** sacar los secretos y la configuración de cada entorno del código: `SECRET_KEY`, `DEBUG` y `ALLOWED_HOSTS` pasan a un `.env` que no se sube, con un `.env.example` como plantilla.
+
+**Archivos creados/modificados:** `requirements.txt` (`python-decouple`), `config/settings.py` (`config()`), `.env` (nuevo, no versionado), `.env.example` (nuevo).
+
+**Qué aprendí:**
+- Código (igual en todos lados, va a GitHub) vs. configuración por entorno (cambia entre PC y servidor, puede tener secretos).
+- La `SECRET_KEY` firma sesiones, tokens CSRF y links de recuperación de contraseña. Si se expone, se reemplaza: el historial de Git no se reescribe.
+- Cambiar la `SECRET_KEY` cierra las sesiones abiertas, pero no afecta las contraseñas.
+- `get_random_secret_key()` genera una clave nueva; `python -c "..."` ejecuta una línea de Python desde la terminal.
+- `config("NOMBRE")` lee primero las variables de entorno y después el `.env` (lo busca subiendo desde la carpeta de `settings.py`). Sin `default`, si falta la variable, Django no arranca (`UndefinedValueError`).
+- Todo lo que viene del `.env` es texto: `cast=bool` convierte `"False"` en `False` (sin `cast`, sería verdadero). `cast=Csv()` convierte `"a,b"` en una lista.
+- `default=False` en `DEBUG`: seguro por defecto.
+- Con `DEBUG=False`, `runserver` no sirve estáticos ni media; por eso el `.env.example` deja `DEBUG=True` para probar en local.
+- Formato del `.env`: `NOMBRE=valor`, sin espacios ni comillas.
+
+**Cómo verificar que funciona:** `check` y `runserver` funcionan como antes; sin `.env`, `check` da `UndefinedValueError` por `SECRET_KEY`; `django-insecure` no aparece en `settings.py`; `git status` no muestra `.env`; en GitHub, `settings.py` dice `config("SECRET_KEY")`.
+
+**Errores que aparecieron y cómo los resolví:** ninguno.
+
+**Commit(s):**
+- `Move secret key and debug settings to environment variables`
+- `Update project log for stage 11`
+
+**Dudas para repasar:** —
+
 ## 9. Conceptos aprendidos (glosario personal)
 
 > Completar con mis propias palabras a medida que avancemos.
@@ -536,3 +569,7 @@ Lo que debería tener la versión final (✱ = obligatorio para la entrega de Co
 | `Q` | Objeto para combinar condiciones de un filtro con OR (`\|`) o AND (`&`) | 10 |
 | Lookup (`__icontains`) | Forma de comparar un campo en un filtro: contiene el texto, sin importar mayúsculas | 10 |
 | `pluralize` | Filtro que agrega "s" cuando el número no es 1 | 10 |
+| Variables de entorno / `.env` | Configuración que cambia según dónde corre el proyecto, fuera del código | 11 |
+| `.env.example` | Plantilla versionada con los nombres de las variables, sin valores reales | 11 |
+| `SECRET_KEY` | Clave que Django usa para firmar sesiones y tokens; nunca va en el repo | 11 |
+| `config()` / `cast` | Función de `python-decouple` que lee una variable / convierte el texto al tipo correcto | 11 |
